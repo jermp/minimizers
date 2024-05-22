@@ -108,7 +108,7 @@ void run(std::istream& is,                                                      
 
         os << (is_forward ? "YES" : "NO");
 
-        std::cerr << '\n' << buffer.str() << std::endl;
+        std::cerr << buffer.str() << std::endl;
     }
 }
 
@@ -158,7 +158,7 @@ void run(std::string const& input_filename, std::string const& alg,  //
         }
     } else if (alg == "rot-minimizer") {
         if (k > w) {
-            const uint64_t t = 0;  // not used
+            const uint64_t t = -1;  // not used
             run<rotational>(input_filename, k, w, t, seed, bench, stream);
         } else {
             std::cerr << "k must be larger than w" << std::endl;

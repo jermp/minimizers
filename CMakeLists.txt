@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(MINIS)
+project(MINIMIZERS)
 
 set(CMAKE_CXX_STANDARD 17)
 if (NOT CMAKE_BUILD_TYPE)
@@ -26,7 +26,7 @@ if (UNIX)
 
   MESSAGE(STATUS "Compiling with flags: ${CMAKE_CXX_FLAGS}")
 
-  if (MINIS_USE_SANITIZERS)
+  if (MINIMIZERS_USE_SANITIZERS)
     MESSAGE(STATUS "Using sanitizers. Compiling with flags: -fsanitize=address -fno-omit-frame-pointer")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
   endif()
