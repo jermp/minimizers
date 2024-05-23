@@ -38,7 +38,8 @@ void run(std::istream& is,                                                      
 
     Alg a(w, k, t, seed);
 
-    auto start = clock_type::now();
+    auto duration = clock_type::duration::zero();
+
     while (util::appendline(is, sequence)) {
         if (sequence.size() == pos || sequence[pos] == '>' || sequence[pos] == ';') {
             // Empty line or new fasta entry.
@@ -53,6 +54,8 @@ void run(std::istream& is,                                                      
             continue;
         }
 
+        auto start = clock_type::now();
+
         const uint64_t num_windows = sequence.size() - l + 1;
         tot_num_windows += num_windows;
         for (uint64_t i = 0; i != num_windows; ++i) {
@@ -66,6 +69,9 @@ void run(std::istream& is,                                                      
             prev_p = p;
         }
 
+        auto stop = clock_type::now();
+        duration += stop - start;
+
         // BUG: This is wrong when a sequence spans multiple lines.
         num_kmers += sequence.size() - k + 1;
 
@@ -75,11 +81,9 @@ void run(std::istream& is,                                                      
         sequence.resize(l - 1);
         pos = sequence.size();
     }
-    auto stop = clock_type::now();
 
     if (bench) {
-        double elapsed =
-            std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count();
+        double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
         std::cout << "tot. time: " << elapsed / 1000 << " [sec]" << std::endl;
         std::cout << "avg. per window: " << (elapsed * 1000000) / tot_num_windows << " [nanosec]"
                   << std::endl;
