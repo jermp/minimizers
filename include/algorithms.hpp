@@ -252,30 +252,23 @@ struct rotational_orig {
     }
 
     uint64_t sample(char const* window) {
+        using T = std::pair<uint8_t, typename Hasher::hash_type>;
         static std::vector<uint64_t> sum(m_w);
         uint64_t p = -1;
-        typename Hasher::hash_type min_hash(-1);
+        T min_hash{-1, -1};
         for (uint64_t i = 0; i != m_w; ++i) {
             char const* kmer = window + i;
             std::fill(sum.begin(), sum.end(), 0);
             for (uint64_t j = 0; j != m_k; ++j) sum[j % m_w] += kmer[j];
-            bool found = true;
+            bool in_uhs = true;
             for (uint64_t j = 1; j != m_w; ++j) {
-                if (sum[0] + 4 < sum[j]) {  // assume alphabet of size 4
-                    found = false;
+                if (!(sum[j] <= sum[0] + 4)) {  // assume alphabet of size 4
+                    in_uhs = false;
                     break;
                 }
             }
-            if (found) {
-                p = i;
-                break;
-            } else {
-                auto hash = Hasher::hash(kmer, m_k, m_seed);
-                if (hash < min_hash) {
-                    min_hash = hash;
-                    p = i;
-                }
-            }
+            T hash{in_uhs ? 0 : 1, Hasher::hash(kmer, m_k, m_seed)};
+            if (hash < min_hash) { min_hash = hash p = i; }
         }
         assert(p < m_w);
         return p;
