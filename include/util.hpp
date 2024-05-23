@@ -5,7 +5,6 @@ namespace minimizers {
 namespace constants {
 constexpr uint64_t default_hash_size = 128;
 constexpr uint64_t default_seed = 1234567890;
-constexpr uint64_t r = 3;  // lower bound on t
 }  // namespace constants
 
 namespace util {

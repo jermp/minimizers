@@ -144,9 +144,8 @@ void run(std::string const& input_filename, std::string const& alg,  //
             std::cerr << "k must be larger than w" << std::endl;
         }
     } else if (alg == "mod-minimizer") {
-        // uint64_t t = k % w;
-        // t += (t <= constants::r ? w : 0);
-        const uint64_t t = constants::r + ((k - constants::r) % w);
+        const uint64_t r = 4;
+        const uint64_t t = r + ((k - r) % w);
         run<mod_sampling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
     } else if (alg == "miniception") {
         if (k > w) {
