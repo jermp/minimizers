@@ -1,6 +1,9 @@
 #pragma once
 
 #include <cmath>
+#include <numbers>
+#include <complex>
+#include <iomanip>
 
 #include "external/fastmod/fastmod.h"
 
@@ -285,6 +288,103 @@ struct rotational_orig {
 
 private:
     uint64_t m_w, m_k, m_seed;
+};
+
+/// Decycling code from original paper.
+/// TODO: double decycling
+template <typename Hasher>
+struct decycling {
+    static std::string name() { return "decycling-1"; }
+
+    decycling(uint64_t w, uint64_t k, uint64_t /*t*/, uint64_t seed)
+        : m_w(w), m_k(k), m_seed(seed), pi(std::numbers::pi_v<long double>) {
+        m_sines.reserve(m_k + 1);
+        for (uint64_t i = 0; i != m_k + 1; ++i) { m_sines.push_back(std::sin(2 * pi * i / m_k)); }
+        m_roots.reserve(m_k + 1);
+        for (uint64_t i = 0; i != m_k + 1; ++i) {
+            m_roots.push_back(std::exp(std::complex<long double>(0, 2 * pi * i / m_k)));
+        }
+        std::cerr << std::setprecision(20);
+    }
+
+    // The pseudocode from the original paper.
+    // We intentionally ignore the 0 case.
+    bool is_decycling_original(char const* kmer) {
+        long double im = 0;
+        for (uint64_t i = 0; i != m_k; ++i) { im += m_sines[i] * kmer[i]; }
+        long double im_rot = 0;
+        for (uint64_t i = 0; i != m_k; ++i) { im_rot += m_sines[i + 1] * kmer[i]; }
+        // std::cerr << "Im: " << im << " im_rot: " << im_rot <<
+        // std::endl;
+        return im > eps and im_rot <= eps;
+    }
+
+    // Same method, but using complex numbers.
+    // The only time this is different is in rare cases where im_rot=0,
+    // but the original method above computes im_rot as just above 0 due to rounding errors.
+    bool is_decycling_arg_same(char const* kmer) {
+        std::complex<long double> x = 0;
+        for (uint64_t i = 0; i != m_k; ++i) { x += m_roots[i] * (long double)kmer[i]; }
+        auto a = std::arg(x);
+        // std::cerr << "arg:    " << a << "\nthresh: " << pi - 2 * pi / m_k << endl;
+        return pi - 2 * pi / m_k + eps < a;
+    }
+
+    // Use angle around 0 instead of around pi.
+    //
+    // This is the first negative instead of first positive rotation.
+    // That should be equivalent since it's basically using the D-tilde.
+    //
+    // FIXME: This is around 0.5% worse than the versions above. I do not understand why.
+    bool is_decycling_arg_equiv(char const* kmer) {
+        std::complex<long double> x = 0;
+        for (uint64_t i = 0; i != m_k; ++i) { x += m_roots[i] * (long double)kmer[i]; }
+        auto a = std::arg(x);
+        return -2 * pi / m_k + eps < a and a <= eps;
+    }
+
+    // More natural version that does anti-clockwise instead of clockwise negative rotation.
+    //
+    // FIXME: This is around 5% worse than the versions above. I do not understand why.
+    // I expected this to be equivalent, since the rotation direction shouldn't matter?
+    bool is_decycling_arg_simple(char const* kmer) {
+        std::complex<long double> x = 0;
+        for (uint64_t i = 0; i != m_k; ++i) { x += m_roots[i] * (long double)kmer[i]; }
+        auto a = std::arg(x);
+        return -eps <= a and a < 2 * pi / m_k - eps;
+    }
+
+    uint64_t sample(char const* window) {
+        using T = std::pair<uint8_t, typename Hasher::hash_type>;
+        uint64_t p = -1;
+        T min_hash{-1, -1};
+        for (uint64_t i = 0; i != m_w; ++i) {
+            auto is_decycling_1 = is_decycling_original(window + i);
+            auto is_decycling_2 = is_decycling_arg_same(window + i);
+            auto is_decycling_3 = is_decycling_arg_equiv(window + i);
+            auto is_decycling_4 = is_decycling_arg_simple(window + i);
+            auto is_decycling = is_decycling_2;
+            T hash{is_decycling ? 0 : 1, Hasher::hash(window + i, m_w, m_k, m_seed)};
+            if (hash < min_hash) {
+                min_hash = hash;
+                p = i;
+            }
+        }
+        assert(p < m_w);
+        return p;
+    }
+
+    uint64_t sample(char const* window, bool /*clear*/) {
+        // TODO
+        return sample(window);
+    }
+
+private:
+    long double eps = 1e-14;
+    long double pi;
+    uint64_t m_w, m_k, m_seed;
+    vector<long double> m_sines;
+    vector<std::complex<long double>> m_roots;
 };
 
 }  // namespace minimizers

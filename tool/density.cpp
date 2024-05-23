@@ -189,6 +189,9 @@ void run(std::string const& input_filename, std::string const& alg,  //
             std::cout << "### num_tmers = " << (w + k - 1) - t + 1 << std::endl;
             run<mod_sampling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
         }
+    } else if (alg == "decycling") {
+        const uint64_t t = -1;  // not used
+        run<decycling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
     } else {
         std::cerr << "Error: '" << alg << "' does not correspond to any method" << std::endl;
     }
