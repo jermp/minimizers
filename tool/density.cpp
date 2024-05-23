@@ -147,6 +147,8 @@ void run(std::string const& input_filename, std::string const& alg,  //
 {
     if (alg == "minimizer") {
         const uint64_t t = k;
+        // TODO: The performance of the random minimizer should be measured using a dedicated
+        // implementation that avoids the overhead of the modulo operation.
         run<mod_sampling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
     } else if (alg == "lr-minimizer") {
         if (k > w) {

@@ -4,6 +4,7 @@
 
 namespace minimizers {
 
+/// A fixed-size ring buffer that can hold up to `size` elements.
 template <typename T>
 struct fixed_size_deque {
     fixed_size_deque() {}
@@ -43,6 +44,7 @@ private:
     std::vector<T> m_buffer;
 };
 
+/// Iterate the minimizers of a text by keeping a queue of optimal kmers.
 template <typename Hasher>
 struct enumerator {
     typedef typename Hasher::hash_type hash_type;
@@ -51,11 +53,13 @@ struct enumerator {
     enumerator(uint64_t w, uint64_t k, uint64_t seed)
         : m_w(w), m_k(k), m_seed(seed), m_position(0), m_window(0), m_q(w) {}
 
-    /* return the position of the (leftmost) smallest kmer in the window */
+    /// Add the last kmer of the pointed-to window, or all kmers when `clear` is true.
     void eat(char const* window, bool clear) {
         for (uint64_t i = clear ? 0 : m_w - 1; i != m_w; ++i) eat(window + i);
     }
 
+    /// Return the position of the minimal element in the current window.
+    /// MUST be called after each eat() or skip() to keep m_window in sync with m_position.
     uint64_t next() {
         uint64_t p = m_q.front().position - m_window;
         assert(p >= 0 and p < m_w);
@@ -63,7 +67,9 @@ struct enumerator {
         return p;
     }
 
+    /// Add the pointed-to kmer.
     void eat(char const* kmer) {
+        // hash the kmer.
         hash_type hash = Hasher::hash(kmer, m_k, m_seed);
 
         /* Removes from front elements which are no longer in the window */
@@ -77,7 +83,9 @@ struct enumerator {
         m_position += 1;
     }
 
+    /// Advance the sliding window but do not insert a new kmer.
     void skip() {
+        /* Removes from front elements which are no longer in the window */
         while (!m_q.empty() and m_position >= m_w and m_q.front().position <= m_position - m_w) {
             m_q.pop_front();
         }
@@ -85,10 +93,15 @@ struct enumerator {
     }
 
 private:
+    /// Fixed value of w.
     uint64_t m_w;
+    /// Fixed value of k.
     uint64_t m_k;
+    /// Fixed seed for the hash function.
     uint64_t m_seed;
+    /// The absolute position of the next-to-be-inserted kmer.
     uint64_t m_position;
+    /// The absolute position of the current window.
     uint64_t m_window;
 
     struct kmer_t {

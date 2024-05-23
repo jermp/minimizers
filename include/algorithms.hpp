@@ -68,10 +68,12 @@ struct mod_sampling {
         m_M_w = fastmod::computeM_u32(m_w);
     }
 
+    /// Sample from a single window.
     uint64_t sample(char const* window) const {
         const uint64_t num_tmers = (m_w + m_k - 1) - m_t + 1;
-        uint64_t p = 0;
+        uint64_t p = -1;
         typename Hasher::hash_type min_hash(-1);
+        // Find the leftmost tmer with minimal hash.
         for (uint64_t i = 0; i != num_tmers; ++i) {
             char const* tmer = window + i;
             auto hash = Hasher::hash(tmer, m_t, m_seed);
@@ -80,6 +82,7 @@ struct mod_sampling {
                 p = i;
             }
         }
+        assert(p < num_tmers);
         uint64_t pos = fastmod::fastmod_u32(p, m_M_w, m_w);  // p % m_w
 
         // if (p == pos) {
@@ -107,6 +110,8 @@ struct mod_sampling {
         return pos;
     }
 
+    /// Sample from a stream.
+    /// If `clear`, this is the first call.
     uint64_t sample(char const* window, bool clear) {
         m_enum_tmers.eat(window, clear);
         uint64_t p = m_enum_tmers.next();
@@ -134,7 +139,7 @@ struct miniception {
     uint64_t sample(char const* window) const {
         const uint64_t w0 = m_k - m_t;
         enumerator<Hasher> enum_tmers(w0 + 1, m_t, m_seed);
-        uint64_t p = 0;
+        uint64_t p = -1;
         typename Hasher::hash_type min_hash(-1);
         for (uint64_t i = 0; i != m_w; ++i) {
             char const* kmer = window + i;
@@ -177,14 +182,16 @@ private:
     enumerator<Hasher> m_enum_kmers;
 };
 
-/* Our own simpler and much faster version. */
+/// Our own simpler and much faster version.
+/// Sample the leftmost kmer with the largest sum of characters in positions 0 mod w.
+/// This is equivalent to a mod_sampling with the rotational_hasher function.
 struct rotational_alt {
     static std::string name() { return "rotational_alt"; }
 
     rotational_alt(uint64_t w, uint64_t k, uint64_t /*t*/, uint64_t /*seed*/) : m_w(w), m_k(k) {}
 
     uint64_t sample(char const* window) {
-        uint64_t p = 0;
+        uint64_t p = -1;
         uint64_t max = 0;
         for (uint64_t i = 0; i != m_w; ++i) {
             char const* kmer = window + i;
