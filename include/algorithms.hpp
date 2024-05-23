@@ -76,7 +76,7 @@ struct mod_sampling {
         // Find the leftmost tmer with minimal hash.
         for (uint64_t i = 0; i != num_tmers; ++i) {
             char const* tmer = window + i;
-            auto hash = Hasher::hash(tmer, m_t, m_seed);
+            auto hash = Hasher::hash(tmer, m_w, m_t, m_seed);
             if (hash < min_hash) {
                 min_hash = hash;
                 p = i;
@@ -148,7 +148,7 @@ struct miniception {
             uint64_t tmer_p = enum_tmers.next();
             assert(tmer_p >= 0 and tmer_p <= w0);
             if (tmer_p == 0 or tmer_p == w0) {  // context is charged
-                auto hash = Hasher::hash(kmer, m_k, m_seed);
+                auto hash = Hasher::hash(kmer, m_w, m_k, m_seed);
                 if (hash < min_hash) {
                     min_hash = hash;
                     p = i;
@@ -182,6 +182,24 @@ private:
     enumerator<Hasher> m_enum_kmers;
 };
 
+/// Return the negative of the sum of characters in positions 0 mod w, so that
+/// the kmer with max sum compares smallest.
+struct rotational_hasher {
+    typedef int64_t hash_type;
+
+    rotational_hasher(uint64_t w) : m_w(w) {}
+
+    static int64_t hash(char const* kmer, const uint64_t w, const uint64_t k,
+                        const uint64_t /*seed*/) {
+        int64_t sum = 0;
+        for (uint64_t j = 0; j < k; j += w) sum += kmer[j];
+        return -sum;
+    }
+
+private:
+    uint64_t m_w;
+};
+
 /// Our own simpler and much faster version.
 /// Sample the leftmost kmer with the largest sum of characters in positions 0 mod w.
 /// This is equivalent to a mod_sampling with the rotational_hasher function.
@@ -206,13 +224,18 @@ struct rotational_alt {
         return p;
     }
 
-    uint64_t sample(char const* window, bool /*clear*/) {
-        // Warning: not implemented...
-        return sample(window);
+    uint64_t sample(char const* window, bool clear) {
+        m_enum_kmers.eat(window, clear);
+        auto p = m_enum_kmers.next();
+        // FIXME: Test and then remove.
+        auto q = sample(window);
+        assert(p == q);
+        return p;
     }
 
 private:
     uint64_t m_w, m_k;
+    enumerator<rotational_hasher> m_enum_kmers;
 };
 
 /* Version faithful to the original description by Marcais et al. */

@@ -70,7 +70,7 @@ struct enumerator {
     /// Add the pointed-to kmer.
     void eat(char const* kmer) {
         // hash the kmer.
-        hash_type hash = Hasher::hash(kmer, m_k, m_seed);
+        hash_type hash = Hasher::hash(kmer, m_w, m_k, m_seed);
 
         /* Removes from front elements which are no longer in the window */
         while (!m_q.empty() and m_position >= m_w and m_q.front().position <= m_position - m_w) {

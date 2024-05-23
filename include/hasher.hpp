@@ -9,14 +9,16 @@ namespace minimizers {
 
 struct murmurhash2_64 {
     typedef uint64_t hash_type;
-    static uint64_t hash(char const* bytes, const uint64_t num_bytes, const uint64_t seed) {
+    static uint64_t hash(char const* bytes, const uint64_t /*w*/, const uint64_t num_bytes,
+                         const uint64_t seed) {
         return MurmurHash64A(bytes, num_bytes, seed);
     }
 };
 
 struct cityhash_128 {
     typedef __uint128_t hash_type;
-    static __uint128_t hash(char const* bytes, const uint64_t num_bytes, const uint64_t seed) {
+    static __uint128_t hash(char const* bytes, const uint64_t /*w*/, const uint64_t num_bytes,
+                            const uint64_t seed) {
         auto ret = CityHash128WithSeed(bytes, num_bytes, {seed, seed});
         __uint128_t out = 0;
         out += __uint128_t(ret.first);
