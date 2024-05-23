@@ -61,6 +61,7 @@ struct enumerator {
     /// Return the position of the minimal element in the current window.
     /// MUST be called after each eat() or skip() to keep m_window in sync with m_position.
     uint64_t next() {
+        assert(!m_q.empty());
         uint64_t p = m_q.front().position - m_window;
         assert(p >= 0 and p < m_w);
         m_window += 1;
