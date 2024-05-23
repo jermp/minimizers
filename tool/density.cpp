@@ -28,7 +28,6 @@ void run(std::istream& is,                                                      
 
     std::string sequence;
     uint64_t pos = 0;
-    uint64_t prev_p = 0;
     uint64_t num_sampled_kmers = 0;
     uint64_t num_kmers = 0;
     uint64_t tot_num_windows = 0;
@@ -64,13 +63,18 @@ void run(std::istream& is,                                                      
             assert(p >= 0 and p < w);
             do_not_optimize_away(p);
             if (!bench) positions.push_back(i + p);  // absolute + relative
-            if (i == 0) prev_p = p;
-            if (p + 1 < prev_p) is_forward = false;
-            prev_p = p;
         }
 
         auto stop = clock_type::now();
         duration += stop - start;
+
+        // Check forwardness outside of times loop.
+        for (int i = 0; i + 1 < positions.size(); i++) {
+            if (positions[i] > positions[i + 1]) {
+                is_forward = false;
+                break;
+            }
+        }
 
         // BUG: This is wrong when a sequence spans multiple lines.
         num_kmers += sequence.size() - k + 1;
@@ -88,6 +92,7 @@ void run(std::istream& is,                                                      
         std::cout << "avg. per window: " << (elapsed * 1000000) / tot_num_windows << " [nanosec]"
                   << std::endl;
     } else {
+        // BUG: when a sequence spans multiple lines, each line is counted again from 0.
         std::sort(positions.begin(), positions.end());
         num_sampled_kmers =
             std::distance(positions.begin(), std::unique(positions.begin(), positions.end()));
