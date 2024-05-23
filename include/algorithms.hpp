@@ -65,7 +65,7 @@ struct mod_sampling {
 
     mod_sampling(uint64_t w, uint64_t k, uint64_t t, uint64_t seed)
         : m_w(w), m_k(k), m_t(t), m_seed(seed), m_enum_tmers(w + k - t, t, seed) {
-        m_M_w = fastmod::computeM_u64(m_w);
+        m_M_w = fastmod::computeM_u32(m_w);
     }
 
     uint64_t sample(char const* window) const {
@@ -80,7 +80,7 @@ struct mod_sampling {
                 p = i;
             }
         }
-        uint64_t pos = fastmod::fastmod_u64(p, m_M_w, m_w);  // p % m_w
+        uint64_t pos = fastmod::fastmod_u32(p, m_M_w, m_w);  // p % m_w
 
         // if (p == pos) {
         //     uint64_t i = 0;
@@ -110,12 +110,12 @@ struct mod_sampling {
     uint64_t sample(char const* window, bool clear) {
         m_enum_tmers.eat(window, clear);
         uint64_t p = m_enum_tmers.next();
-        return fastmod::fastmod_u64(p, m_M_w, m_w);  // p % m_w
+        return fastmod::fastmod_u32(p, m_M_w, m_w);  // p % m_w
     }
 
 private:
     uint64_t m_w, m_k, m_t, m_seed;
-    __uint128_t m_M_w;
+    uint64_t m_M_w;
     enumerator<Hasher> m_enum_tmers;
 };
 
