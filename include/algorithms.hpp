@@ -80,7 +80,31 @@ struct mod_sampling {
                 p = i;
             }
         }
-        return fastmod::fastmod_u64(p, m_M_w, m_w);  // p % m_w
+        uint64_t pos = fastmod::fastmod_u64(p, m_M_w, m_w);  // p % m_w
+
+        // if (p == pos) {
+        //     uint64_t i = 0;
+        //     for (; i != p; ++i) { std::cout << "="; }
+        //     std::cout << "|";
+        //     for (; i != p + m_t; ++i) { std::cout << "*"; }
+        //     for (; i != p + m_k; ++i) { std::cout << "="; }
+        //     std::cout << "|";
+        //     for (; i != m_w + m_k - 1; ++i) { std::cout << "="; }
+        //     std::cout << std::endl;
+        // } else {
+        //     assert(pos < p);
+        //     uint64_t i = 0;
+        //     for (; i != pos; ++i) { std::cout << "="; }
+        //     std::cout << "|";
+        //     for (; i != p; ++i) { std::cout << "="; }
+        //     for (; i != p + m_t; ++i) { std::cout << "*"; }
+        //     for (; i != pos + m_k; ++i) { std::cout << "="; }
+        //     std::cout << "|";
+        //     for (; i != m_w + m_k - 1; ++i) { std::cout << "="; }
+        //     std::cout << std::endl;
+        // }
+
+        return pos;
     }
 
     uint64_t sample(char const* window, bool clear) {
@@ -153,10 +177,11 @@ private:
     enumerator<Hasher> m_enum_kmers;
 };
 
-struct rotational {
-    static std::string name() { return "rotational"; }
+/* Our own simpler and much faster version. */
+struct rotational_alt {
+    static std::string name() { return "rotational_alt"; }
 
-    rotational(uint64_t w, uint64_t k, uint64_t /*t*/, uint64_t /*seed*/) : m_w(w), m_k(k) {}
+    rotational_alt(uint64_t w, uint64_t k, uint64_t /*t*/, uint64_t /*seed*/) : m_w(w), m_k(k) {}
 
     uint64_t sample(char const* window) {
         uint64_t p = 0;
@@ -181,6 +206,55 @@ struct rotational {
 
 private:
     uint64_t m_w, m_k;
+};
+
+/* Version faithful to the original description by Marcais et al. */
+template <typename Hasher>
+struct rotational_orig {
+    static std::string name() { return "rotational_orig"; }
+
+    rotational_orig(uint64_t w, uint64_t k, uint64_t /*t*/, uint64_t seed)
+        : m_w(w), m_k(k), m_seed(seed) {
+        assert(m_k % m_w == 0);
+    }
+
+    uint64_t sample(char const* window) {
+        static std::vector<uint64_t> sum(m_w);
+        uint64_t p = -1;
+        typename Hasher::hash_type min_hash(-1);
+        for (uint64_t i = 0; i != m_w; ++i) {
+            char const* kmer = window + i;
+            std::fill(sum.begin(), sum.end(), 0);
+            for (uint64_t j = 0; j != m_k; ++j) sum[j % m_w] += kmer[j];
+            bool found = true;
+            for (uint64_t j = 1; j != m_w; ++j) {
+                if (sum[0] + 4 < sum[j]) {  // assume alphabet of size 4
+                    found = false;
+                    break;
+                }
+            }
+            if (found) {
+                p = i;
+                break;
+            } else {
+                auto hash = Hasher::hash(kmer, m_k, m_seed);
+                if (hash < min_hash) {
+                    min_hash = hash;
+                    p = i;
+                }
+            }
+        }
+        assert(p < m_w);
+        return p;
+    }
+
+    uint64_t sample(char const* window, bool /*clear*/) {
+        // Warning: not implemented...
+        return sample(window);
+    }
+
+private:
+    uint64_t m_w, m_k, m_seed;
 };
 
 }  // namespace minimizers
