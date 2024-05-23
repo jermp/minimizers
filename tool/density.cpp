@@ -41,14 +41,18 @@ void run(std::istream& is,                                                      
     auto start = clock_type::now();
     while (util::appendline(is, sequence)) {
         if (sequence.size() == pos || sequence[pos] == '>' || sequence[pos] == ';') {
+            // Empty line or new fasta entry.
             sequence.clear();
             continue;
         }
         if (sequence.size() < l) {
+            // Not yet enough symbols for a window.
+            // BUG: This shouldn't clear the sequence, and count kmers appropriately.
             sequence.clear();
             pos = 0;
             continue;
         }
+
         const uint64_t num_windows = sequence.size() - l + 1;
         tot_num_windows += num_windows;
         for (uint64_t i = 0; i != num_windows; ++i) {
@@ -61,7 +65,11 @@ void run(std::istream& is,                                                      
             if (p + 1 < prev_p) is_forward = false;
             prev_p = p;
         }
+
+        // BUG: This is wrong when a sequence spans multiple lines.
         num_kmers += sequence.size() - k + 1;
+
+        // Copy last l-1 symbols to the beginning of the buffer and drop the rest.
         std::copy(sequence.data() + sequence.size() - (l - 1), sequence.data() + sequence.size(),
                   sequence.data());
         sequence.resize(l - 1);
