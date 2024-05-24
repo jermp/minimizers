@@ -243,6 +243,32 @@ using uhs_hash = std::pair<uint8_t, typename Hasher::hash_type>;
 
 uint8_t char_remap[256];
 
+/// Proof that for all j: sumj <= sum0 + sigma/2 is sufficient to guarantee the
+/// existence of a sum0.
+///
+/// We have a grid
+/// sum0    sumj
+/// s0   s1 ... sw-1               s0+sigma/2+1
+/// s1   s2 ... s0+x               s1+sigma/2+1
+/// ...
+/// sw-1 s0+x s1+y ... sw-1+z      s[w-1]+sigma/w+1
+///
+/// Suppose that for each row, there is a j such that sumj <= su0+sigma/2 does not hold.
+/// I.e. there is a value at least ^
+///
+/// s0       x>=s0+sigma/2+1    x = leftmost max in the 1st row
+///
+/// .                        p=q+u
+/// ..
+/// z        p>=z+sigma/2+1          (implied by y below)
+/// .                        y=z+v
+/// ..
+/// x        y>=x+sigma/2+1     y = leftmost max in row of x; must be created as some previous z+v,
+/// v<=sigma-1. (z cannot be s0.)
+///
+/// p >= z+sigma/2+1>=y-(sigma-1)+sigma/2+1>=x+sigma/2+1-(sigma-1)+sigma/2+1=x+3 => must be created.
+/// cannot be created by s0.
+
 /// Return whether the kmer is in the UHS, and the random kmer order.
 template <typename Hasher>
 struct rotational_orig_hasher {
@@ -263,9 +289,9 @@ struct rotational_orig_hasher {
             // Instead of <=+sigma, we do <=+sigma-1,
             // since the max difference between two characters is actually
             // sigma-1, not sigma.
-            // And in fact, sigma-2 also seems to work.
-            // TODO: Prove that sigma-2 (or maybe sigma/2) is sufficient.
-            if (!(sumj <= sum0 + sigma - 1)) {
+            // In fact, I have a sketch of a proof (see above) that sigma/2 is sufficient.
+            // (We make sure to do the correct rounding in odd cases.)
+            if (!(sumj <= sum0 + (sigma + 1) / 2)) {
                 in_uhs = false;
                 break;
             }
@@ -303,7 +329,7 @@ struct rotational_orig {
         }
         if (min_hash.first != 0) {
             std::cerr << "Not a single kmer is in UHS!" << std::endl;
-            assert(false);
+            std::exit(1);
         }
         assert(p < m_w);
         return p;
