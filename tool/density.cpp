@@ -150,26 +150,26 @@ void run(std::string const& input_filename, std::string const& alg,  //
          const uint64_t k, const uint64_t w, const uint64_t seed,    //
          const bool bench, const bool stream)                        //
 {
+    const uint64_t r = 4;
+
     if (alg == "minimizer") {
         const uint64_t t = k;
         // TODO: The performance of the random minimizer should be measured using a dedicated
         // implementation that avoids the overhead of the modulo operation.
         run<mod_sampling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
     } else if (alg == "lr-minimizer") {
-        if (k > w) {
+        if (k >= w + r) {
             const uint64_t t = k - w;
             run<mod_sampling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
         } else {
-            std::cerr << "k must be larger than w" << std::endl;
+            std::cerr << "k must be at least w+r" << std::endl;
         }
     } else if (alg == "mod-minimizer") {
-        const uint64_t r = 4;
         const uint64_t t = r + ((k - r) % w);
         run<mod_sampling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
     } else if (alg == "miniception") {
         // Theorem 7 of the miniception paper proves an upper bound for k-w+1,
         // but in practice they use k-w.
-        const uint64_t r = 4;
         const uint64_t t = w < k ? std::max(k - w, r) : r;
         run<miniception<Hasher>>(input_filename, k, w, t, seed, bench, stream);
     } else if (alg == "rot-minimizer-alt") {
