@@ -175,12 +175,8 @@ void run(std::string const& input_filename, std::string const& alg,  //
             std::cerr << "k must be larger than w" << std::endl;
         }
     } else if (alg == "rot-minimizer-alt") {
-        if (k > w) {
-            const uint64_t t = -1;  // not used
-            run<rotational_alt>(input_filename, k, w, t, seed, bench, stream);
-        } else {
-            std::cerr << "k must be larger than w" << std::endl;
-        }
+        const uint64_t t = -1;  // not used
+        run<rotational_alt<Hasher>>(input_filename, k, w, t, seed, bench, stream);
     } else if (alg == "rot-minimizer-orig") {
         if (k % w == 0) {
             const uint64_t t = -1;  // not used

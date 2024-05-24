@@ -185,41 +185,41 @@ private:
     enumerator<Hasher> m_enum_kmers;
 };
 
+template <typename Hasher>
+using rotational_alt_hash = std::pair<int64_t, typename Hasher::hash_type>;
+
 /// Return the negative of the sum of characters in positions 0 mod w, so that
 /// the kmer with max sum compares smallest.
-struct rotational_hasher {
-    typedef int64_t hash_type;
+template <typename Hasher>
+struct rotational_alt_hasher {
+    using hash_type = rotational_alt_hash<Hasher>;
 
-    rotational_hasher(uint64_t w) : m_w(w) {}
-
-    static int64_t hash(char const* kmer, const uint64_t w, const uint64_t k,
-                        const uint64_t /*seed*/) {
+    static hash_type hash(char const* kmer, const uint64_t w, const uint64_t k,
+                          const uint64_t seed) {
         int64_t sum = 0;
         for (uint64_t j = 0; j < k; j += w) sum += kmer[j];
-        return -sum;
+        return {-sum, Hasher::hash(kmer, w, k, seed)};
     }
-
-private:
-    uint64_t m_w;
 };
 
 /// Our own simpler and much faster version.
 /// Sample the leftmost kmer with the largest sum of characters in positions 0 mod w.
 /// This is equivalent to a mod_sampling with the rotational_hasher function.
+template <typename Hasher>
 struct rotational_alt {
     static std::string name() { return "rotational_alt"; }
 
-    rotational_alt(uint64_t w, uint64_t k, uint64_t /*t*/, uint64_t /*seed*/) : m_w(w), m_k(k) {}
+    rotational_alt(uint64_t w, uint64_t k, uint64_t /*t*/, uint64_t seed)
+        : m_w(w), m_k(k), m_seed(seed), m_enum_kmers(w, k, seed) {}
 
     uint64_t sample(char const* window) {
         uint64_t p = -1;
-        uint64_t max = 0;
+        rotational_alt_hash<Hasher> min_hash{-1, -1};
         for (uint64_t i = 0; i != m_w; ++i) {
             char const* kmer = window + i;
-            uint64_t sum = 0;
-            for (uint64_t j = 0; j < m_k; j += m_w) sum += kmer[j];
-            if (sum > max) {
-                max = sum;
+            auto hash = rotational_alt_hasher<Hasher>::hash(kmer, m_w, m_k, m_seed);
+            if (hash < min_hash) {
+                min_hash = hash;
                 p = i;
             }
         }
@@ -229,16 +229,12 @@ struct rotational_alt {
 
     uint64_t sample(char const* window, bool clear) {
         m_enum_kmers.eat(window, clear);
-        auto p = m_enum_kmers.next();
-        // FIXME: Test and then remove.
-        auto q = sample(window);
-        assert(p == q);
-        return p;
+        return m_enum_kmers.next();
     }
 
 private:
-    uint64_t m_w, m_k;
-    enumerator<rotational_hasher> m_enum_kmers;
+    uint64_t m_w, m_k, m_seed;
+    enumerator<rotational_alt_hasher<Hasher>> m_enum_kmers;
 };
 
 /* Version faithful to the original description by Marcais et al. */
