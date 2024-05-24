@@ -194,6 +194,7 @@ template <typename Hasher>
 struct rotational_alt_hasher {
     using hash_type = rotational_alt_hash<Hasher>;
 
+    // TODO: This can be implemented in O(1) time by storing prefix sums and using a rolling hash.
     static hash_type hash(char const* kmer, const uint64_t w, const uint64_t k,
                           const uint64_t seed) {
         int64_t sum = 0;
@@ -240,6 +241,8 @@ private:
 template <typename Hasher>
 using uhs_hash = std::pair<uint8_t, typename Hasher::hash_type>;
 
+uint8_t char_remap[256];
+
 /// Return whether the kmer is in the UHS, and the random kmer order.
 template <typename Hasher>
 struct rotational_orig_hasher {
@@ -250,12 +253,19 @@ struct rotational_orig_hasher {
         bool in_uhs = true;
 
         uint64_t sum0 = 0;
-        for (int pos = 0; pos < k; pos += w) sum0 += kmer[pos];
+        for (int pos = 0; pos < k; pos += w) sum0 += char_remap[kmer[pos]];
 
         for (uint64_t j = 1; j != w; ++j) {
             uint64_t sumj = 0;
-            for (int pos = j; pos < k; pos += w) sumj += kmer[pos];
-            if (!(sumj <= sum0 + 4)) {  // assume alphabet of size 4
+            for (int pos = j; pos < k; pos += w) sumj += char_remap[kmer[pos]];
+            // Assume alphabet size 4.
+            uint64_t sigma = 4;
+            // Instead of <=+sigma, we do <=+sigma-1,
+            // since the max difference between two characters is actually
+            // sigma-1, not sigma.
+            // And in fact, sigma-2 also seems to work.
+            // TODO: Prove that sigma-2 (or maybe sigma/2) is sufficient.
+            if (!(sumj <= sum0 + sigma - 1)) {
                 in_uhs = false;
                 break;
             }
@@ -273,6 +283,11 @@ struct rotational_orig {
     rotational_orig(uint64_t w, uint64_t k, uint64_t /*t*/, uint64_t seed)
         : m_w(w), m_k(k), m_seed(seed), m_enum_kmers(w, k, seed) {
         assert(m_k % m_w == 0);
+
+        char_remap['A'] = 0;
+        char_remap['C'] = 1;
+        char_remap['T'] = 2;
+        char_remap['G'] = 3;
     }
 
     uint64_t sample(char const* window) {
@@ -286,7 +301,10 @@ struct rotational_orig {
                 p = i;
             }
         }
-        if (min_hash.first != 0) { std::exit(1); }
+        if (min_hash.first != 0) {
+            std::cerr << "Not a single kmer is in UHS!" << std::endl;
+            assert(false);
+        }
         assert(p < m_w);
         return p;
     }
