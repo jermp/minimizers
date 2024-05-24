@@ -290,7 +290,8 @@ struct rotational_orig_hasher {
             // sigma-1, not sigma.
             // In fact, I have a sketch of a proof (see above) that sigma/2 is sufficient.
             // (We make sure to do the correct rounding in odd cases.)
-            if (!(sumj <= sum0 + (sigma + 1) / 2)) {
+            // if (!(sumj <= sum0 + (sigma + 1) / 2)) {
+            if (!(sumj <= sum0 + sigma)) {
                 in_uhs = false;
                 break;
             }
