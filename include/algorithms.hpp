@@ -279,11 +279,11 @@ struct rotational_orig_hasher {
         constexpr uint64_t sigma = 4;
         bool in_uhs = true;
         uint64_t sum0 = 0;
-        for (uint64_t pos = 0; pos != k; pos += w) sum0 += char_remap[int(kmer[pos])];
+        for (uint64_t pos = 0; pos < k; pos += w) sum0 += char_remap[int(kmer[pos])];
 
         for (uint64_t j = 1; j != w; ++j) {
             uint64_t sumj = 0;
-            for (uint64_t pos = j; pos != k; pos += w) sumj += char_remap[int(kmer[pos])];
+            for (uint64_t pos = j; pos < k; pos += w) sumj += char_remap[int(kmer[pos])];
             // Assume alphabet size 4.
             // Instead of <=+sigma, we do <=+sigma-1,
             // since the max difference between two characters is actually
