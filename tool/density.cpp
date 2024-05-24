@@ -217,7 +217,8 @@ int main(int argc, char** argv) {
     parser.add("w", "Window size.", "-w", true);
     parser.add("alg",
                "Sampling algorithm to use. Options are: 'minimizer', 'lr-minimizer', "
-               "'mod-minimizer', 'miniception', 'mod-sampling'.",
+               "'mod-minimizer', 'miniception', 'mod-sampling', 'rot-minimizer-orig', "
+               "'rot-minimizer-alt', 'decycling', 'double-decycling'.",
                "-a", true);
     parser.add("hash_size",
                "Number of bits for hash function (either 64 or 128; default is " +

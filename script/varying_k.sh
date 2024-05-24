@@ -34,6 +34,18 @@ do
     ./density -i random.10M.fa -k $k -w 8 -a rot-minimizer-orig --stream 2>> rot-minimizer-orig.varying_k.w.8.txt
 done
 
+# w = 8
+for k in {5..100}
+do
+	./density -i random.10M.fa -k $k -w 8 -a decycling --stream 2>> decycling.varying_k.w.8.txt
+done
+
+# w = 8
+for k in {5..100}
+do
+	./density -i random.10M.fa -k $k -w 8 -a double-decycling --stream 2>> double-decycling.varying_k.w.8.txt
+done
+
 # w = 24
 for k in {5..300}
 do
@@ -68,4 +80,16 @@ done
 for k in {5..300}
 do
     ./density -i random.10M.fa -k $k -w 24 -a rot-minimizer-orig --stream 2>> rot-minimizer-orig.varying_k.w.24.txt
+done
+
+# w = 24
+for k in {5..300}
+do
+	./density -i random.10M.fa -k $k -w 24 -a decycling --stream 2>> decycling.varying_k.w.24.txt
+done
+
+# w = 24
+for k in {5..300}
+do
+	./density -i random.10M.fa -k $k -w 24 -a double-decycling --stream 2>> double-decycling.varying_k.w.24.txt
 done
