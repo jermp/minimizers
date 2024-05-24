@@ -276,16 +276,15 @@ struct rotational_orig_hasher {
 
     static hash_type hash(char const* kmer, const uint64_t w, const uint64_t k,
                           const uint64_t seed) {
+        constexpr uint64_t sigma = 4;
         bool in_uhs = true;
-
         uint64_t sum0 = 0;
-        for (int pos = 0; pos < k; pos += w) sum0 += char_remap[kmer[pos]];
+        for (uint64_t pos = 0; pos != k; pos += w) sum0 += char_remap[int(kmer[pos])];
 
         for (uint64_t j = 1; j != w; ++j) {
             uint64_t sumj = 0;
-            for (int pos = j; pos < k; pos += w) sumj += char_remap[kmer[pos]];
+            for (uint64_t pos = j; pos != k; pos += w) sumj += char_remap[int(kmer[pos])];
             // Assume alphabet size 4.
-            uint64_t sigma = 4;
             // Instead of <=+sigma, we do <=+sigma-1,
             // since the max difference between two characters is actually
             // sigma-1, not sigma.
@@ -309,11 +308,10 @@ struct rotational_orig {
     rotational_orig(uint64_t w, uint64_t k, uint64_t /*t*/, uint64_t seed)
         : m_w(w), m_k(k), m_seed(seed), m_enum_kmers(w, k, seed) {
         assert(m_k % m_w == 0);
-
-        char_remap['A'] = 0;
-        char_remap['C'] = 1;
-        char_remap['T'] = 2;
-        char_remap['G'] = 3;
+        char_remap[int('A')] = 0;
+        char_remap[int('C')] = 1;
+        char_remap[int('T')] = 2;
+        char_remap[int('G')] = 3;
     }
 
     uint64_t sample(char const* window) {
@@ -403,8 +401,6 @@ struct decycling_hasher {
     }
 };
 
-/// Decycling code from original paper.
-/// TODO: double decycling
 template <typename Hasher>
 struct decycling {
     static std::string name() { return "decycling"; }
@@ -461,8 +457,6 @@ struct double_decycling_hasher {
     }
 };
 
-/// Decycling code from original paper.
-/// TODO: double decycling
 template <typename Hasher>
 struct double_decycling {
     static std::string name() { return "double_decycling"; }

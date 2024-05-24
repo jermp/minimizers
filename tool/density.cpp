@@ -69,7 +69,7 @@ void run(std::istream& is,                                                      
         duration += stop - start;
 
         // Check forwardness outside of times loop.
-        for (int i = 0; i + 1 < positions.size(); i++) {
+        for (uint64_t i = 0; i + 1 < positions.size(); i++) {
             if (positions[i] > positions[i + 1]) {
                 is_forward = false;
                 break;
