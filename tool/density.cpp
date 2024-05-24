@@ -167,13 +167,11 @@ void run(std::string const& input_filename, std::string const& alg,  //
         const uint64_t t = r + ((k - r) % w);
         run<mod_sampling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
     } else if (alg == "miniception") {
-        if (k > w) {
-            /* As recommended in Theorem 7 of "Miniception paper". */
-            const uint64_t t = k - w + 1;
-            run<miniception<Hasher>>(input_filename, k, w, t, seed, bench, stream);
-        } else {
-            std::cerr << "k must be larger than w" << std::endl;
-        }
+        // Theorem 7 of the miniception paper proves an upper bound for k-w+1,
+        // but in practice they use k-w.
+        const uint64_t r = 4;
+        const uint64_t t = w < k ? std::max(k - w, r) : r;
+        run<miniception<Hasher>>(input_filename, k, w, t, seed, bench, stream);
     } else if (alg == "rot-minimizer-alt") {
         const uint64_t t = -1;  // not used
         run<rotational_alt<Hasher>>(input_filename, k, w, t, seed, bench, stream);
