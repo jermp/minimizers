@@ -193,6 +193,9 @@ void run(std::string const& input_filename, std::string const& alg,  //
     } else if (alg == "decycling") {
         const uint64_t t = -1;  // not used
         run<decycling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
+    } else if (alg == "double-decycling") {
+        const uint64_t t = -1;  // not used
+        run<double_decycling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
     } else {
         std::cerr << "Error: '" << alg << "' does not correspond to any method" << std::endl;
     }
