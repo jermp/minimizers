@@ -1,5 +1,13 @@
 # Sampling algorithms
 
+This library provides a collection of sampling algorithms, including: mod-sampling, minimizers, closed syncmers, rotational-minimizers, and decycling set based minimizers.
+
+The code has been used for the experiments of the paper *"The mod-minimizer: a simple and efficient sampling algorithm for long k-mers"*, [https://www.biorxiv.org/content/10.1101/2024.05.25.595898v1](https://www.biorxiv.org/content/10.1101/2024.05.25.595898v1).
+
+To reproduce the experiments in the paper: first compile the code as explained below and then run the scripts [here](https://github.com/jermp/minimizers/tree/main/script#experiments).
+
+### Compile the code
+
 Before compiling, pull all dependencies with
 
 	git submodule update --init --recursive
@@ -11,11 +19,13 @@ Compile the code with
     cmake ..
     make
 
-and generate some random sequence (in the following example, of 1 million nucleotides) with
+### Quick start
+
+After compilation, generate some random sequence (in the following example, of 1 million nucleotides) with
 
     ./generate_random_fasta -o test.fa -n 1000000
 
-Lastly, evaluate density of different methods with the tool `density`.
+and evaluate density of different methods with the tool `density`.
 Some examples below.
 
 	./density -i test.fa -k 63 -w 8 -a minimizer --stream
