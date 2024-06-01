@@ -46,8 +46,7 @@ void run(std::istream& is,                                                      
             continue;
         }
         if (sequence.size() < l) {
-            // Not yet enough symbols for a window.
-            // BUG: This shouldn't clear the sequence, and count kmers appropriately.
+            // Not yet enough symbols for a window, so discard sequence.
             sequence.clear();
             pos = 0;
             continue;
@@ -68,7 +67,7 @@ void run(std::istream& is,                                                      
         auto stop = clock_type::now();
         duration += stop - start;
 
-        // Check forwardness outside of times loop.
+        // Check forwardness outside main loop.
         for (uint64_t i = 0; i + 1 < positions.size(); i++) {
             if (positions[i] > positions[i + 1]) {
                 is_forward = false;
@@ -76,7 +75,6 @@ void run(std::istream& is,                                                      
             }
         }
 
-        // BUG: This is wrong when a sequence spans multiple lines.
         num_kmers += sequence.size() - k + 1;
 
         // Copy last l-1 symbols to the beginning of the buffer and drop the rest.
@@ -92,7 +90,6 @@ void run(std::istream& is,                                                      
         std::cout << "avg. per window: " << (elapsed * 1000000) / tot_num_windows << " [nanosec]"
                   << std::endl;
     } else {
-        // BUG: when a sequence spans multiple lines, each line is counted again from 0.
         std::sort(positions.begin(), positions.end());
         num_sampled_kmers =
             std::distance(positions.begin(), std::unique(positions.begin(), positions.end()));
@@ -154,8 +151,6 @@ void run(std::string const& input_filename, std::string const& alg,  //
 
     if (alg == "minimizer") {
         const uint64_t t = k;
-        // TODO: The performance of the random minimizer should be measured using a dedicated
-        // implementation that avoids the overhead of the modulo operation.
         run<mod_sampling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
     } else if (alg == "lr-minimizer") {
         if (k >= w + r) {
@@ -212,7 +207,10 @@ void run(std::string const& input_filename, std::string const& alg,             
 
 int main(int argc, char** argv) {
     cmd_line_parser::parser parser(argc, argv);
-    parser.add("input_filename", "A fasta file (gzipped or not).", "-i", true);
+    parser.add("input_filename",
+               "A fasta file (gzipped or not). Warning: multi-fasta files are not supported, i.e., "
+               "each sequence must span a single line.",
+               "-i", true);
     parser.add("k", "K-mer length.", "-k", true);
     parser.add("w", "Window size.", "-w", true);
     parser.add("alg",
