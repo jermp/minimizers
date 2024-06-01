@@ -1,6 +1,13 @@
 # Sampling algorithms
 
-This library provides a collection of sampling algorithms, including: mod-sampling, minimizers, closed syncmers, rotational-minimizers, and decycling set based minimizers.
+This library provides a collection of sampling algorithms, including:
+
+- mod-sampling (specifically, lr-minimizers and mod-minimizers),
+- "classic" minimizers,
+- miniception,
+- closed syncmers,
+- rotational-minimizers, and
+- decycling set based minimizers.
 
 The code has been used for the experiments of the paper *"The mod-minimizer: a simple and efficient sampling algorithm for long k-mers"*, [https://www.biorxiv.org/content/10.1101/2024.05.25.595898v1](https://www.biorxiv.org/content/10.1101/2024.05.25.595898v1).
 
