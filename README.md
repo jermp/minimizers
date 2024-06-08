@@ -2,10 +2,11 @@
 
 This library provides a collection of sampling algorithms, including:
 
-- mod-sampling (specifically, lr-minimizers and mod-minimizers),
+- mod-sampling,
+- lr-minimizers (a "context-sensitive" version of closed syncmers),
+- mod-minimizers,
 - "classic" minimizers,
 - miniception,
-- closed syncmers,
 - rotational-minimizers, and
 - decycling set based minimizers.
 
