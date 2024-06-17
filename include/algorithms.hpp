@@ -3,64 +3,40 @@
 #include <cmath>
 #include <numbers>
 #include <complex>
-#include <iomanip>
+#include <cassert>
+#include <iostream>
+#include <array>
 
 #include "external/fastmod/fastmod.h"
 
-#include "util.hpp"
 #include "enumerator.hpp"
 
 namespace minimizers {
 
-double redundancy_in_density_in_perc(const double density, const double lower_bound) {
-    return (density / lower_bound - 1) * 100.0;
-}
+namespace detail {
 
-double redundancy_in_density_as_factor(const double density, const double lower_bound) {
-    return density / lower_bound;
-}
+struct globals_t {
+    std::vector<long double> sines;
+    std::vector<std::complex<long double>> roots;
+    long double pi = std::numbers::pi_v<long double>;
+};
 
-bool is_not_forward(const uint64_t k, const uint64_t w, const uint64_t t) {
-    assert(w >= 2);
-    assert(t <= k);
-    /*
-        We know a scheme is *not* foward when there exist x and y
-        such that x mod w + 1 < y mod w, where x and y are the
-        positions of the smallest t-mer in window i and i-1 respectively,
-        for some i > 0. So we derive: x mod w < w - 2.
-        Since x is in [0..l - t] = [0..w + k - 1 - t], then x is at most
-        w + k - t - 1, i.e., w + k - t - 1 mod w < w - 2.
+globals_t& get_globals();
 
-        All possible backward jumps (y mod w, x mod w), of length y-x-1,
-        are for y in [x+1..w-1].
+}  // namespace detail
 
-        Note: in math, we would write (k - t - 1) mod w < w - 2,
-        but here we always sum w to avoid having to take the
-        modulo of negative integers when t = k.
-    */
-    return (w + k - t - 1) % w < w - 2;
-}
-
-/* This ignores (asymptotic) lower order terms. */
-double closed_form_density(std::string const& scheme_name,                        //
-                           const uint64_t k, const uint64_t w, const uint64_t t)  //
-{
-    if (scheme_name == "miniception") {
-        return 1.67 / w;
-    } else if (scheme_name == "mod_sampling") {
-        bool ok = (w + k - 1 - t) % w == w - 1;
-        double correction = ok ? 0 : floor(1.0 + double(k - 1.0 - t) / w) / (w + k - t);
-        return double(floor(1.0 + double(k - t - 1.0) / w) + 2.0 - correction) / (w + k - t + 1.0);
-    } else {
-        throw std::runtime_error("unknown scheme name");
-    }
-}
+double redundancy_in_density_in_perc(double density, double lower_bound);
+double redundancy_in_density_as_factor(double density, double lower_bound);
+bool is_not_forward(const uint64_t k, const uint64_t w, const uint64_t t);
 
 /*
     Each algorithm returns a position p in [0..w-1], corresponding
     to the position of the kmer selected as the window's fingerprint.
     Note: in case of ties, we return the *leftmost* kmer.
 */
+
+double closed_form_density(std::string const& scheme_name, const uint64_t k, const uint64_t w,
+                           const uint64_t t);
 
 template <typename Hasher>
 struct mod_sampling {
@@ -241,8 +217,6 @@ private:
 template <typename Hasher>
 using uhs_hash = std::pair<uint8_t, typename Hasher::hash_type>;
 
-uint8_t char_remap[256];
-
 /// Proof that for all j: sumj <= sum0 + sigma/2 is sufficient to guarantee the
 /// existence of a sum0.
 ///
@@ -263,11 +237,11 @@ uint8_t char_remap[256];
 /// z        p>=z+sigma/2+1          (implied by y below)
 /// .                        y=z+v
 /// ..
-/// x        y>=x+sigma/2+1     y = leftmost max in row of x; must be created as some previous z+v,
-/// v<=sigma-1. (z cannot be s0.)
+/// x        y>=x+sigma/2+1     y = leftmost max in row of x; must be created as some previous
+/// z+v, v<=sigma-1. (z cannot be s0.)
 ///
-/// p >= z+sigma/2+1>=y-(sigma-1)+sigma/2+1>=x+sigma/2+1-(sigma-1)+sigma/2+1=x+3 => must be created.
-/// cannot be created by s0.
+/// p >= z+sigma/2+1>=y-(sigma-1)+sigma/2+1>=x+sigma/2+1-(sigma-1)+sigma/2+1=x+3 => must be
+/// created. cannot be created by s0.
 
 /// Return whether the kmer is in the UHS, and the random kmer order.
 template <typename Hasher>
@@ -276,14 +250,25 @@ struct rotational_orig_hasher {
 
     static hash_type hash(char const* kmer, const uint64_t w, const uint64_t k,
                           const uint64_t seed) {
-        constexpr uint64_t sigma = 4;
+        static constexpr uint64_t sigma = 4;
+        static constexpr auto char_remap = []() -> std::array<char, 256> {
+            std::array<char, 256> dst;
+
+            dst[int('A')] = 0;
+            dst[int('C')] = 1;
+            dst[int('T')] = 2;
+            dst[int('G')] = 3;
+
+            return dst;
+        }();
+
         bool in_uhs = true;
         uint64_t sum0 = 0;
-        for (uint64_t pos = 0; pos < k; pos += w) sum0 += char_remap[int(kmer[pos])];
+        for (uint64_t pos = 0; pos < k; pos += w) sum0 += char_remap.at(int(kmer[pos]));
 
         for (uint64_t j = 1; j != w; ++j) {
             uint64_t sumj = 0;
-            for (uint64_t pos = j; pos < k; pos += w) sumj += char_remap[int(kmer[pos])];
+            for (uint64_t pos = j; pos < k; pos += w) sumj += char_remap.at(int(kmer[pos]));
             // Assume alphabet size 4.
             // Instead of <=+sigma, we do <=+sigma-1,
             // since the max difference between two characters is actually
@@ -309,10 +294,6 @@ struct rotational_orig {
     rotational_orig(uint64_t w, uint64_t k, uint64_t /*t*/, uint64_t seed)
         : m_w(w), m_k(k), m_seed(seed), m_enum_kmers(w, k, seed) {
         assert(m_k % m_w == 0);
-        char_remap[int('A')] = 0;
-        char_remap[int('C')] = 1;
-        char_remap[int('T')] = 2;
-        char_remap[int('G')] = 3;
     }
 
     uint64_t sample(char const* window) {
@@ -344,34 +325,14 @@ private:
     enumerator<rotational_orig_hasher<Hasher>> m_enum_kmers;
 };
 
-// TODO: Global variables are ugly and ideally should be replaced by member variables on the Hasher
-// objects.
-vector<long double> sines;
-vector<std::complex<long double>> roots;
-long double pi = std::numbers::pi_v<long double>;
-
 // The pseudocode from the original paper.
 // We intentionally ignore the 0 case.
-bool is_decycling_original(char const* kmer, const uint64_t k) {
-    long double im = 0;
-    for (uint64_t i = 0; i != k; ++i) { im += sines[i] * kmer[i]; }
-    long double im_rot = 0;
-    for (uint64_t i = 0; i != k; ++i) { im_rot += sines[i + 1] * kmer[i]; }
-    // std::cerr << "Im: " << im << " im_rot: " << im_rot <<
-    // std::endl;
-    return im > 0 and im_rot <= 0;
-}
+bool is_decycling_original(char const* kmer, const uint64_t k);
 
 // Same method, but using complex numbers.
 // This is only different due to floating point rounding errors, e.g. when imag(x)=0.
 // The original method has ever so slightly better density.
-bool is_decycling_arg_pos(char const* kmer, const uint64_t k) {
-    std::complex<long double> x = 0;
-    for (uint64_t i = 0; i != k; ++i) { x += roots[i] * (long double)kmer[i]; }
-    auto a = std::arg(x);
-    // std::cerr << "arg:    " << a << "\nthresh: " << pi - 2 * pi / k << endl;
-    return pi - 2 * pi / k < a;
-}
+bool is_decycling_arg_pos(char const* kmer, const uint64_t k);
 
 // Use angle around 0 instead of around pi.
 //
@@ -379,12 +340,7 @@ bool is_decycling_arg_pos(char const* kmer, const uint64_t k) {
 // That should be equivalent since it's basically using the D-tilde.
 //
 // FIXME: This is around 1% worse than the versions above. I do not understand why.
-bool is_decycling_arg_neg(char const* kmer, const uint64_t k) {
-    std::complex<long double> x = 0;
-    for (uint64_t i = 0; i != k; ++i) { x += roots[i] * (long double)kmer[i]; }
-    auto a = std::arg(x);
-    return -2 * pi / k < a and a <= 0;
-}
+bool is_decycling_arg_neg(char const* kmer, const uint64_t k);
 
 template <typename Hasher>
 struct decycling_hasher {
@@ -408,11 +364,14 @@ struct decycling {
 
     decycling(uint64_t w, uint64_t k, uint64_t /*t*/, uint64_t seed)
         : m_w(w), m_k(k), m_seed(seed), m_enum_kmers(w, k, seed) {
-        sines.reserve(m_k + 1);
-        for (uint64_t i = 0; i != m_k; ++i) { sines.push_back(std::sin(2 * pi * i / m_k)); }
-        roots.reserve(m_k + 1);
+        detail::get_globals().sines.reserve(m_k + 1);
         for (uint64_t i = 0; i != m_k; ++i) {
-            roots.push_back(std::exp(std::complex<long double>(0, 2 * pi * i / m_k)));
+            detail::get_globals().sines.push_back(std::sin(2 * detail::get_globals().pi * i / m_k));
+        }
+        detail::get_globals().roots.reserve(m_k + 1);
+        for (uint64_t i = 0; i != m_k; ++i) {
+            detail::get_globals().roots.push_back(
+                std::exp(std::complex<long double>(0, 2 * detail::get_globals().pi * i / m_k)));
         }
     }
 
@@ -464,11 +423,14 @@ struct double_decycling {
 
     double_decycling(uint64_t w, uint64_t k, uint64_t /*t*/, uint64_t seed)
         : m_w(w), m_k(k), m_seed(seed), m_enum_kmers(w, k, seed) {
-        sines.reserve(m_k + 1);
-        for (uint64_t i = 0; i != m_k; ++i) { sines.push_back(std::sin(2 * pi * i / m_k)); }
-        roots.reserve(m_k + 1);
+        detail::get_globals().sines.reserve(m_k + 1);
         for (uint64_t i = 0; i != m_k; ++i) {
-            roots.push_back(std::exp(std::complex<long double>(0, 2 * pi * i / m_k)));
+            detail::get_globals().sines.push_back(std::sin(2 * detail::get_globals().pi * i / m_k));
+        }
+        detail::get_globals().roots.reserve(m_k + 1);
+        for (uint64_t i = 0; i != m_k; ++i) {
+            detail::get_globals().roots.push_back(
+                std::exp(std::complex<long double>(0, 2 * detail::get_globals().pi * i / m_k)));
         }
     }
 

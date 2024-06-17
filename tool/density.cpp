@@ -8,6 +8,7 @@
 #include "external/gz/zip_stream.hpp"
 #include "external/gz/zip_stream.cpp"
 
+#include "util.hpp"
 #include "hasher.hpp"
 #include "algorithms.hpp"
 
