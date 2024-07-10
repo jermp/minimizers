@@ -10,7 +10,7 @@ This library provides a collection of sampling algorithms, including:
 - rotational-minimizers, and
 - decycling set based minimizers.
 
-The code has been used for the experiments of the paper *"The mod-minimizer: a simple and efficient sampling algorithm for long k-mers"*, [https://www.biorxiv.org/content/10.1101/2024.05.25.595898v1](https://www.biorxiv.org/content/10.1101/2024.05.25.595898v1).
+The code has been used for the experiments of the paper [*"The mod-minimizer: a simple and efficient sampling algorithm for long k-mers"*](https://www.biorxiv.org/content/10.1101/2024.05.25.595898v2), to appear in WABI 2024.
 
 To reproduce the experiments in the paper: first compile the code as explained below and then run the scripts [here](https://github.com/jermp/minimizers/tree/main/script#experiments).
 
