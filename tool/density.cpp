@@ -160,7 +160,7 @@ void run(std::string const& input_filename, std::string const& alg,  //
             std::cerr << "k must be at least w+r" << std::endl;
         }
     } else if (alg == "open-closed-syncmer") {
-        const uint64_t t = std::min(r, k);
+        const uint64_t t = k > 2 * w ? std::max(k - 2 * w, r) : r;
         run<open_closed_syncmer<Hasher>>(input_filename, k, w, t, seed, bench, stream);
     } else if (alg == "mod-minimizer") {
         const uint64_t t = r + ((k - r) % w);
@@ -168,7 +168,7 @@ void run(std::string const& input_filename, std::string const& alg,  //
     } else if (alg == "miniception") {
         // Theorem 7 of the miniception paper proves an upper bound for k-w+1,
         // but in practice they use k-w.
-        const uint64_t t = w < k ? std::max(k - w, r) : r;
+        const uint64_t t = k > w ? std::max(k - w, r) : r;
         run<miniception<Hasher>>(input_filename, k, w, t, seed, bench, stream);
     } else if (alg == "rot-minimizer-alt") {
         const uint64_t t = -1;  // not used
