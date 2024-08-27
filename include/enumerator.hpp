@@ -44,6 +44,17 @@ private:
     std::vector<T> m_buffer;
 };
 
+template <typename HashType>
+struct pair_t {
+    uint64_t preference;
+    HashType hash;
+    bool operator<(pair_t other) {
+        if (preference < other.preference) return true;
+        if (preference == other.preference) return hash < other.hash;
+        return false;
+    }
+};
+
 /// Iterate the minimizers of a text by keeping a queue of optimal kmers.
 template <typename Hasher>
 struct enumerator {
@@ -55,7 +66,7 @@ struct enumerator {
 
     /// Add the last kmer of the pointed-to window, or all kmers when `clear` is true.
     void eat(char const* window, bool clear) {
-        for (uint64_t i = clear ? 0 : m_w - 1; i != m_w; ++i) eat(window + i);
+        for (uint64_t i = clear ? 0 : m_w - 1; i != m_w; ++i) eat_with_preference(window + i, 0);
     }
 
     /// Return the position of the minimal element in the current window.
@@ -63,15 +74,16 @@ struct enumerator {
     uint64_t next() {
         assert(!m_q.empty());
         uint64_t p = m_q.front().position - m_window;
-        assert(p >= 0 and p < m_w);
+        assert(p < m_w);
         m_window += 1;
         return p;
     }
 
-    /// Add the pointed-to kmer.
-    void eat(char const* kmer) {
+    /// Add the pointed-to kmer with a preference order:
+    /// 0, 1, 2, ... (0 is highest preference)
+    void eat_with_preference(char const* kmer, uint64_t preference) {
         // hash the kmer.
-        hash_type hash = Hasher::hash(kmer, m_w, m_k, m_seed);
+        pair_t<hash_type> hash{preference, Hasher::hash(kmer, m_w, m_k, m_seed)};
 
         /* Removes from front elements which are no longer in the window */
         while (!m_q.empty() and m_position >= m_w and m_q.front().position <= m_position - m_w) {
@@ -107,8 +119,8 @@ private:
 
     struct kmer_t {
         kmer_t() {}
-        kmer_t(hash_type h, uint64_t p) : hash(h), position(p) {}
-        hash_type hash;
+        kmer_t(pair_t<hash_type> h, uint64_t p) : hash(h), position(p) {}
+        pair_t<hash_type> hash;
         uint64_t position;
     };
 

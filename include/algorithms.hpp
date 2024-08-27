@@ -142,20 +142,20 @@ struct miniception {
     uint64_t sample(char const* window) const {
         const uint64_t w0 = m_k - m_t;
         enumerator<Hasher> enum_tmers(w0 + 1, m_t, m_seed);
+        pair_t<typename Hasher::hash_type> min_pair{2, typename Hasher::hash_type(-1)};
         uint64_t p = -1;
-        typename Hasher::hash_type min_hash(-1);
         for (uint64_t i = 0; i != m_w; ++i) {
             char const* kmer = window + i;
             bool clear = i == 0;  // first kmer
             enum_tmers.eat(kmer, clear);
             uint64_t tmer_p = enum_tmers.next();
-            assert(tmer_p >= 0 and tmer_p <= w0);
-            if (tmer_p == 0 or tmer_p == w0) {  // context is charged
-                auto hash = Hasher::hash(kmer, m_w, m_k, m_seed);
-                if (hash < min_hash) {
-                    min_hash = hash;
-                    p = i;
-                }
+            assert(tmer_p <= w0);
+            auto hash = Hasher::hash(kmer, m_w, m_k, m_seed);
+            pair_t<typename Hasher::hash_type> pair{1, hash};
+            if (tmer_p == 0 or tmer_p == w0) pair.preference = 0;  // context is charged
+            if (pair < min_pair) {
+                min_pair = pair;
+                p = i;
             }
         }
         assert(p < m_w);
@@ -163,16 +163,76 @@ struct miniception {
     }
 
     uint64_t sample(char const* window, bool clear) {
+        const uint64_t w0 = m_k - m_t;
         for (uint64_t i = clear ? 0 : m_w - 1; i != m_w; ++i) {
             char const* kmer = window + i;
             m_enum_tmers.eat(kmer, i == 0);
             uint64_t tmer_p = m_enum_tmers.next();
-            assert(tmer_p >= 0 and tmer_p <= m_k - m_t);
-            if (tmer_p == 0 or tmer_p == m_k - m_t) {  // context is charged
-                m_enum_kmers.eat(kmer);
-            } else {
-                m_enum_kmers.skip();
+            assert(tmer_p <= w0);
+            uint64_t preference = 1;
+            if (tmer_p == 0 or tmer_p == w0) preference = 0;  // context is charged
+            m_enum_kmers.eat_with_preference(kmer, preference);
+        }
+        uint64_t p = m_enum_kmers.next();
+        assert(p < m_w);
+        return p;
+    }
+
+private:
+    uint64_t m_w, m_k, m_t, m_seed;
+    enumerator<Hasher> m_enum_tmers;
+    enumerator<Hasher> m_enum_kmers;
+};
+
+template <typename Hasher>
+struct open_closed_syncmer {
+    static std::string name() { return "open-closed-syncmer"; }
+
+    open_closed_syncmer(uint64_t w, uint64_t k, uint64_t t, uint64_t seed)
+        : m_w(w)
+        , m_k(k)
+        , m_t(t)
+        , m_seed(seed)
+        , m_enum_tmers(k - t + 1, t, seed)
+        , m_enum_kmers(w, k, seed) {}
+
+    uint64_t sample(char const* window) const {
+        const uint64_t w0 = m_k - m_t;
+        const uint64_t mid_w0 = w0 / 2;
+        enumerator<Hasher> enum_tmers(w0 + 1, m_t, m_seed);
+        pair_t<typename Hasher::hash_type> min_pair{3, typename Hasher::hash_type(-1)};
+        uint64_t p = -1;
+        for (uint64_t i = 0; i != m_w; ++i) {
+            char const* kmer = window + i;
+            bool clear = i == 0;  // first kmer
+            enum_tmers.eat(kmer, clear);
+            uint64_t tmer_p = enum_tmers.next();
+            assert(tmer_p <= w0);
+            auto hash = Hasher::hash(kmer, m_w, m_k, m_seed);
+            pair_t<typename Hasher::hash_type> pair{2, hash};
+            if (tmer_p == mid_w0) pair.preference = 0;
+            if (tmer_p == 0 or tmer_p == w0) pair.preference = 1;
+            if (pair < min_pair) {
+                min_pair = pair;
+                p = i;
             }
+        }
+        assert(p < m_w);
+        return p;
+    }
+
+    uint64_t sample(char const* window, bool clear) {
+        const uint64_t w0 = m_k - m_t;
+        const uint64_t mid_w0 = w0 / 2;
+        for (uint64_t i = clear ? 0 : m_w - 1; i != m_w; ++i) {
+            char const* kmer = window + i;
+            m_enum_tmers.eat(kmer, i == 0);
+            uint64_t tmer_p = m_enum_tmers.next();
+            assert(tmer_p <= w0);
+            uint64_t preference = 2;
+            if (tmer_p == mid_w0) preference = 0;
+            if (tmer_p == 0 or tmer_p == w0) preference = 1;
+            m_enum_kmers.eat_with_preference(kmer, preference);
         }
         uint64_t p = m_enum_kmers.next();
         assert(p < m_w);

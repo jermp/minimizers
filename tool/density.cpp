@@ -59,7 +59,7 @@ void run(std::istream& is,                                                      
         for (uint64_t i = 0; i != num_windows; ++i) {
             char const* window = sequence.data() + i;
             uint64_t p = stream ? a.sample(window, i == 0) : a.sample(window);
-            assert(p >= 0 and p < w);
+            assert(p < w);
             do_not_optimize_away(p);
             if (!bench) positions.push_back(i + p);  // absolute + relative
         }
@@ -159,6 +159,9 @@ void run(std::string const& input_filename, std::string const& alg,  //
         } else {
             std::cerr << "k must be at least w+r" << std::endl;
         }
+    } else if (alg == "open-closed-syncmer") {
+        const uint64_t t = std::min(r, k);
+        run<open_closed_syncmer<Hasher>>(input_filename, k, w, t, seed, bench, stream);
     } else if (alg == "mod-minimizer") {
         const uint64_t t = r + ((k - r) % w);
         run<mod_sampling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
@@ -216,7 +219,7 @@ int main(int argc, char** argv) {
     parser.add("alg",
                "Sampling algorithm to use. Options are: 'minimizer', 'lr-minimizer', "
                "'mod-minimizer', 'miniception', 'mod-sampling', 'rot-minimizer-orig', "
-               "'rot-minimizer-alt', 'decycling', 'double-decycling'.",
+               "'rot-minimizer-alt', 'decycling', 'double-decycling', 'open-closed-syncmer'.",
                "-a", true);
     parser.add("hash_size",
                "Number of bits for hash function (either 64 or 128; default is " +
