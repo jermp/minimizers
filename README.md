@@ -9,7 +9,7 @@ This library provides a collection of sampling algorithms, including:
 - miniception,
 - rotational-minimizers,
 - decycling set based minimizers,
-- open/closed syncmers.
+- open-closed-syncmers.
 
 The code has been used for the experiments of the paper [*"The mod-minimizer: a simple and efficient sampling algorithm for long k-mers"*](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.WABI.2024.11), published in WABI 2024.
 
