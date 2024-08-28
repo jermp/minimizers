@@ -159,7 +159,11 @@ void run(std::string const& input_filename, std::string const& alg,  //
         } else {
             std::cerr << "k must be at least w+r" << std::endl;
         }
+        // const uint64_t t = k > w ? std::max(k - w, r) : r;  // as in miniception
+        // const uint64_t t = k > 2 * w ? std::max(k - 2 * w, r) : r;  // as open-closed-syncmer
+        // run<mod_sampling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
     } else if (alg == "open-closed-syncmer") {
+        // const uint64_t t = k > w ? std::max(k - w, r) : r;
         const uint64_t t = k > 2 * w ? std::max(k - 2 * w, r) : r;
         run<open_closed_syncmer<Hasher>>(input_filename, k, w, t, seed, bench, stream);
     } else if (alg == "mod-minimizer") {
