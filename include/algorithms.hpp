@@ -100,13 +100,20 @@ struct mod_sampling {
         // } else {
         //     assert(pos < p);
         //     uint64_t i = 0;
-        //     for (; i != pos; ++i) { std::cout << "="; }
+        //     for (; i < pos; ++i) { std::cout << "="; }
         //     std::cout << "|";
-        //     for (; i != p; ++i) { std::cout << "="; }
-        //     for (; i != p + m_t; ++i) { std::cout << "*"; }
-        //     for (; i != pos + m_k; ++i) { std::cout << "="; }
-        //     std::cout << "|";
-        //     for (; i != m_w + m_k - 1; ++i) { std::cout << "="; }
+        //     if (p < pos + m_k) {
+        //         for (; i < p; ++i) { std::cout << "="; }
+        //         for (; i < p + m_t; ++i) { std::cout << "*"; }
+        //         for (; i < pos + m_k; ++i) { std::cout << "="; }
+        //         std::cout << "|";
+        //     } else {
+        //         for (; i < pos + m_k; ++i) { std::cout << "="; }
+        //         std::cout << "|";
+        //         for (; i < p; ++i) { std::cout << "="; }
+        //         for (; i < p + m_t; ++i) { std::cout << "*"; }
+        //     }
+        //     for (; i < m_w + m_k - 1; ++i) { std::cout << "="; }
         //     std::cout << std::endl;
         // }
 
