@@ -280,7 +280,7 @@ struct rotational_alt {
     rotational_alt(uint64_t w, uint64_t k, uint64_t /*t*/, uint64_t seed)
         : m_w(w), m_k(k), m_seed(seed), m_enum_kmers(w, k, seed) {}
 
-    uint64_t sample(char const* window) {
+    uint64_t sample(char const* window) const {
         uint64_t p = -1;
         rotational_alt_hash<Hasher> min_hash{-1, -1};
         for (uint64_t i = 0; i != m_w; ++i) {
@@ -382,7 +382,7 @@ struct rotational_orig {
         char_remap[int('G')] = 3;
     }
 
-    uint64_t sample(char const* window) {
+    uint64_t sample(char const* window) const {
         uint64_t p = -1;
         uhs_hash<Hasher> min_hash{-1, -1};
         for (uint64_t i = 0; i != m_w; ++i) {
