@@ -147,7 +147,7 @@ void run(std::istream& is,                                                      
             The mean is pw = 2w/(w+1).
             This is a very good approximation when k is large.
         */
-        std::cout << "  expected num. closed syncmers per window = " << (2.0 * w) / (w + 1) << ")"
+        std::cout << "  expected num. closed syncmers per window = " << (2.0 * w) / (w + 1)
                   << std::endl;
 
         std::cout << "  density = " << density << std::endl;

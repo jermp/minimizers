@@ -165,6 +165,7 @@ struct miniception {
                 p = i;
             }
         }
+        assert(min_pair.preference == 0);
         assert(p < m_w);
         return p;
     }
