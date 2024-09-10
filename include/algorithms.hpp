@@ -278,9 +278,20 @@ struct open_closed_syncmer {
             assert(tmer_p <= w0);
             auto hash = Hasher::hash(kmer, m_w, m_k, m_seed);
             pair_t<typename Hasher::hash_type> pair{2, hash};
+
+            /*
+                Prefer open syncmers first, then, closed syncmers when k is small;
+                viceversa, when k is large, prefer closed syncmers forst, then open syncmers.
+                This trick improves a little bit the density for large k,
+                while preserving that for small k.
+            */
+            if (tmer_p == mid_w0) pair.preference = m_k > 2 * m_w ? 1 : 0;
+            if (tmer_p == 0 or tmer_p == w0) pair.preference = m_k > 2 * m_w ? 0 : 1;
+
             /* Prefer open syncmers first, then closed syncmers, then kmers. */
-            if (tmer_p == mid_w0) pair.preference = 0;
-            if (tmer_p == 0 or tmer_p == w0) pair.preference = 1;
+            // if (tmer_p == mid_w0) pair.preference = 0;
+            // if (tmer_p == 0 or tmer_p == w0) pair.preference = 1;
+
             if (pair < min_pair) {
                 min_pair = pair;
                 p = i;
@@ -299,8 +310,14 @@ struct open_closed_syncmer {
             uint64_t tmer_p = m_enum_tmers.next();
             assert(tmer_p <= w0);
             uint64_t preference = 2;
-            if (tmer_p == mid_w0) preference = 0;
-            if (tmer_p == 0 or tmer_p == w0) preference = 1;
+            /*
+                Prefer open syncmers first, then, closed syncmers when k is small;
+                viceversa, when k is large, prefer closed syncmers forst, then open syncmers.
+                This trick improves a little bit the density for large k,
+                while preserving that for small k.
+            */
+            if (tmer_p == mid_w0) preference = m_k > 2 * m_w ? 1 : 0;
+            if (tmer_p == 0 or tmer_p == w0) preference = m_k > 2 * m_w ? 0 : 1;
             m_enum_kmers.eat_with_preference(kmer, preference);
         }
         uint64_t p = m_enum_kmers.next();
