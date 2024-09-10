@@ -20,9 +20,9 @@ static inline void do_not_optimize_away(T&& value) {
 using namespace minimizers;
 
 template <typename Alg>
-void run(std::istream& is,                                                           //
-         const uint64_t k, const uint64_t w, const uint64_t t, const uint64_t seed,  //
-         const bool bench, const bool stream)                                        //
+double run(std::istream& is,                                                           //
+           const uint64_t k, const uint64_t w, const uint64_t t, const uint64_t seed,  //
+           const bool bench, const bool stream)                                        //
 {
     typedef std::chrono::high_resolution_clock clock_type;
     const uint64_t l = w + k - 1;  // num. symbols in window
@@ -100,88 +100,88 @@ void run(std::istream& is,                                                      
         std::cout << "tot. time: " << elapsed / 1000 << " [sec]" << std::endl;
         std::cout << "avg. per window: " << (elapsed * 1000000) / tot_num_windows << " [nanosec]"
                   << std::endl;
-    } else {
-        std::sort(positions.begin(), positions.end());
-        num_sampled_kmers =
-            std::distance(positions.begin(), std::unique(positions.begin(), positions.end()));
-
-        std::stringbuf buffer;
-        std::ostream os(&buffer);
-
-        // std::cout << "  is_forward = " << (is_forward ? "YES" : "NO")
-        //           << " (expected = " << (is_not_forward(k, w, t) ? "NO)" : "YES)") << std::endl;
-
-        double density = static_cast<double>(num_sampled_kmers) / num_kmers;
-
-        uint64_t num_total_jumps =
-            std::accumulate(jump_lengths.begin(), jump_lengths.end(), uint64_t(0));
-        assert(num_total_jumps == tot_num_windows);
-        double expected_jump_len = 0.0;
-        std::cout << "total jumps = " << num_total_jumps << std::endl;
-        std::cout << "jump len distribution:" << std::endl;
-        for (uint64_t i = 1;  // ignore jumps of length 0 and rescale probabilities
-             i != jump_lengths.size(); ++i) {
-            double prob =
-                static_cast<double>(jump_lengths[i]) / (num_total_jumps - jump_lengths[0]);
-            expected_jump_len += i * prob;
-            std::cout << "  num. jumps of len " << i << " = " << jump_lengths[i];
-            std::cout << "  prob(jump_len=" << i << ")=" << prob << std::endl;
-        }
-
-        std::cout << "expected_jump_len = " << expected_jump_len << std::endl;
-        std::cout << "computed density = 1/expected_jump_len = " << 1 / expected_jump_len
-                  << std::endl;
-
-        // os << "w,k,t,density,density_from_formula,is_forward\n";
-        os << w << ',' << k << ',' << t << ',' << density << ',';
-
-        std::cout << "  num_sampled_kmers = " << num_sampled_kmers << std::endl;
-        std::cout << "  num_kmers = " << num_kmers << std::endl;
-        std::cout << "  num_windows = " << tot_num_windows << std::endl;
-
-        /*
-            The exp. number of closed syncmers in a window
-            is computed as the mean of a binomial distribution
-            with parameter p=2/(w+1) over the support {1,..,w}:
-                P[N=i] = {w choose i} * p^i * (1-p)^(w-i).
-            The mean is pw = 2w/(w+1).
-            This is a very good approximation when k is large.
-        */
-        std::cout << "  expected num. closed syncmers per window = " << (2.0 * w) / (w + 1)
-                  << std::endl;
-
-        std::cout << "  density = " << density << std::endl;
-        std::cout << "  " << redundancy_in_density_as_factor(density, 1.0 / w)
-                  << "X away from lower bound 1/w = " << 1.0 / w << std::endl;
-
-        try {
-            double density_from_formula = closed_form_density(Alg::name(), k, w, t);
-            std::cout << "  calculation using closed formulas:\n";
-            std::cout << "     density = " << density_from_formula << std::endl;
-            std::cout << "     " << redundancy_in_density_as_factor(density_from_formula, 1.0 / w)
-                      << "X away from lower bound 1/w = " << 1.0 / w << std::endl;
-            // os << density_from_formula << ',';
-        } catch (std::runtime_error const& /*e*/) { os << ','; }
-
-        os << (is_forward ? "YES" : "NO");
-        std::cerr << buffer.str() << std::endl;
+        return 0.0;
     }
+    std::sort(positions.begin(), positions.end());
+    num_sampled_kmers =
+        std::distance(positions.begin(), std::unique(positions.begin(), positions.end()));
+
+    std::stringbuf buffer;
+    std::ostream os(&buffer);
+
+    // std::cout << "  is_forward = " << (is_forward ? "YES" : "NO")
+    //           << " (expected = " << (is_not_forward(k, w, t) ? "NO)" : "YES)") << std::endl;
+
+    double density = static_cast<double>(num_sampled_kmers) / num_kmers;
+
+    uint64_t num_total_jumps =
+        std::accumulate(jump_lengths.begin(), jump_lengths.end(), uint64_t(0));
+    assert(num_total_jumps == tot_num_windows);
+    double expected_jump_len = 0.0;
+    std::cout << "total jumps = " << num_total_jumps << std::endl;
+    std::cout << "jump len distribution:" << std::endl;
+    for (uint64_t i = 1;  // ignore jumps of length 0 and rescale probabilities
+         i != jump_lengths.size(); ++i) {
+        double prob = static_cast<double>(jump_lengths[i]) / (num_total_jumps - jump_lengths[0]);
+        expected_jump_len += i * prob;
+        std::cout << "  num. jumps of len " << i << " = " << jump_lengths[i];
+        std::cout << "  prob(jump_len=" << i << ")=" << prob << std::endl;
+    }
+
+    std::cout << "expected_jump_len = " << expected_jump_len << std::endl;
+    std::cout << "computed density = 1/expected_jump_len = " << 1 / expected_jump_len << std::endl;
+
+    os << w << ',' << k << ',' << t << ',' << density << ',';
+
+    std::cout << "  num_sampled_kmers = " << num_sampled_kmers << std::endl;
+    std::cout << "  num_kmers = " << num_kmers << std::endl;
+    std::cout << "  num_windows = " << tot_num_windows << std::endl;
+
+    /*
+        The exp. number of closed syncmers in a window
+        is computed as the mean of a binomial distribution
+        with parameter p=2/(w+1) over the support {1,..,w}:
+            P[N=i] = {w choose i} * p^i * (1-p)^(w-i).
+        The mean is pw = 2w/(w+1).
+        This is a very good approximation when k is large.
+    */
+    std::cout << "  expected num. closed syncmers per window = " << (2.0 * w) / (w + 1)
+              << std::endl;
+
+    std::cout << "  density = " << density << std::endl;
+    std::cout << "  " << redundancy_in_density_as_factor(density, 1.0 / w)
+              << "X away from lower bound 1/w = " << 1.0 / w << std::endl;
+
+    try {
+        double density_from_formula = closed_form_density(Alg::name(), k, w, t);
+        std::cout << "  calculation using closed formulas:\n";
+        std::cout << "     density = " << density_from_formula << std::endl;
+        std::cout << "     " << redundancy_in_density_as_factor(density_from_formula, 1.0 / w)
+                  << "X away from lower bound 1/w = " << 1.0 / w << std::endl;
+        // os << density_from_formula << ',';
+    } catch (std::runtime_error const& /*e*/) { os << ','; }
+
+    os << (is_forward ? "YES" : "NO");
+    std::cerr << buffer.str() << std::endl;
+    return density;
 }
 
 template <typename Alg>
-void run(std::string const& input_filename,  //
-         const uint64_t k, const uint64_t w, const uint64_t t, const uint64_t seed,
-         const bool bench, const bool stream)  //
+double run(std::string const& input_filename,  //
+           const uint64_t k, const uint64_t w, const uint64_t t, const uint64_t seed,
+           const bool bench, const bool stream)  //
 {
+    double density = 0.0;
     std::ifstream is(input_filename.c_str());
     if (!is.good()) throw std::runtime_error("error in opening the file '" + input_filename + "'");
     if (util::ends_with(input_filename, ".gz")) {
         zip_istream zis(is);
-        run<Alg>(zis, k, w, t, seed, bench, stream);
+        density = run<Alg>(zis, k, w, t, seed, bench, stream);
     } else {
-        run<Alg>(is, k, w, t, seed, bench, stream);
+        density = run<Alg>(is, k, w, t, seed, bench, stream);
     }
     is.close();
+    return density;
 }
 
 template <typename Hasher>
@@ -219,8 +219,21 @@ void run(std::string const& input_filename, std::string const& alg,  //
     }
 
     else if (alg == "open-closed-syncmer") {
-        const uint64_t t = k > 2 * w ? std::max(k - 2 * w, r) : r;
-        run<open_closed_syncmer<Hasher>>(input_filename, k, w, t, seed, bench, stream);
+        // const uint64_t t = k > 2 * w ? std::max(k - 2 * w, r) : r;
+        // run<open_closed_syncmer<Hasher>>(input_filename, k, w, t, seed, bench, stream);
+
+        // compute the best t
+        // uint64_t best_t = 1;
+        // double best_density = 1.0;
+        // for (uint64_t t = 1; t != k; ++t) {
+        //     double density =
+        //         run<open_closed_syncmer<Hasher>>(input_filename, k, w, t, seed, bench, stream);
+        //     if (density < best_density) {
+        //         best_density = density;
+        //         best_t = t;
+        //     }
+        // }
+        // std::cerr << "for k=" << k << " best_t=" << best_t << std::endl;
     }
 
     else if (alg == "mod-minimizer") {
