@@ -194,7 +194,9 @@ void run(std::string const& input_filename, std::string const& alg,  //
     if (alg == "minimizer") {
         const uint64_t t = k;
         run<mod_sampling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
-    } else if (alg == "lr-minimizer") {
+    }
+
+    else if (alg == "lr-minimizer") {
         if (k >= w + r) {
             const uint64_t t = k - w;
             run<mod_sampling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
@@ -204,41 +206,68 @@ void run(std::string const& input_filename, std::string const& alg,  //
         // const uint64_t t = k > w ? std::max(k - w, r) : r;  // as in miniception
         // const uint64_t t = k > 2 * w ? std::max(k - 2 * w, r) : r;  // as open-closed-syncmer
         // run<mod_sampling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
-    } else if (alg == "open-closed-syncmer") {
-        // const uint64_t t = k > w ? std::max(k - w, r) : r;
+    }
+
+    else if (alg == "closed-syncmer") {
+        const uint64_t t = k > w ? std::max(k - w, r) : r;
+        run<closed_syncmer<Hasher>>(input_filename, k, w, t, seed, bench, stream);
+    }
+
+    else if (alg == "open-syncmer") {
+        const uint64_t t = k > w ? std::max(k - w, r) : r;
+        run<open_syncmer<Hasher>>(input_filename, k, w, t, seed, bench, stream);
+    }
+
+    else if (alg == "open-closed-syncmer") {
         const uint64_t t = k > 2 * w ? std::max(k - 2 * w, r) : r;
         run<open_closed_syncmer<Hasher>>(input_filename, k, w, t, seed, bench, stream);
-    } else if (alg == "mod-minimizer") {
+    }
+
+    else if (alg == "mod-minimizer") {
         const uint64_t t = r + ((k - r) % w);
         run<mod_sampling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
-    } else if (alg == "miniception") {
+    }
+
+    else if (alg == "miniception") {
         // Theorem 7 of the miniception paper proves an upper bound for k-w+1,
         // but in practice they use k-w.
         const uint64_t t = k > w ? std::max(k - w, r) : r;
         run<miniception<Hasher>>(input_filename, k, w, t, seed, bench, stream);
-    } else if (alg == "rot-minimizer-alt") {
+    }
+
+    else if (alg == "rot-minimizer-alt") {
         const uint64_t t = -1;  // not used
         run<rotational_alt<Hasher>>(input_filename, k, w, t, seed, bench, stream);
-    } else if (alg == "rot-minimizer-orig") {
+    }
+
+    else if (alg == "rot-minimizer-orig") {
         if (k % w == 0) {
             const uint64_t t = -1;  // not used
             run<rotational_orig<Hasher>>(input_filename, k, w, t, seed, bench, stream);
         } else {
             std::cerr << "w must divide k" << std::endl;
         }
-    } else if (alg == "mod-sampling") {
+    }
+
+    else if (alg == "mod-sampling") {
         for (uint64_t t = 1; t <= k; ++t) {
             std::cout << "### t = " << t << "\n";
             std::cout << "### num_tmers = " << (w + k - 1) - t + 1 << std::endl;
             run<mod_sampling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
         }
-    } else if (alg == "decycling") {
+    }
+
+    else if (alg == "decycling") {
         const uint64_t t = -1;  // not used
         run<decycling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
-    } else if (alg == "double-decycling") {
+    }
+
+    else if (alg == "double-decycling") {
         const uint64_t t = -1;  // not used
         run<double_decycling<Hasher>>(input_filename, k, w, t, seed, bench, stream);
-    } else {
+    }
+
+    else {
         std::cerr << "Error: '" << alg << "' does not correspond to any method" << std::endl;
     }
 }
@@ -265,7 +294,8 @@ int main(int argc, char** argv) {
     parser.add("alg",
                "Sampling algorithm to use. Options are: 'minimizer', 'lr-minimizer', "
                "'mod-minimizer', 'miniception', 'mod-sampling', 'rot-minimizer-orig', "
-               "'rot-minimizer-alt', 'decycling', 'double-decycling', 'open-closed-syncmer'.",
+               "'rot-minimizer-alt', 'decycling', 'double-decycling', 'closed-syncmer', "
+               "'open-syncmer', 'open-closed-syncmer'.",
                "-a", true);
     parser.add("hash_size",
                "Number of bits for hash function (either 64 or 128; default is " +

@@ -46,7 +46,7 @@ double closed_form_density(std::string const& scheme_name,                      
                            const uint64_t k, const uint64_t w, const uint64_t t)  //
 {
     if (scheme_name == "miniception") {
-        return 1.67 / w;
+        return 1.67 / w;  // at most
     } else if (scheme_name == "mod_sampling") {
         bool ok = (w + k - 1 - t) % w == w - 1;
         double correction = ok ? 0 : floor(1.0 + double(k - 1.0 - t) / w) / (w + k - t);
@@ -71,12 +71,10 @@ struct mod_sampling {
         m_M_w = fastmod::computeM_u32(m_w);
     }
 
-    /// Sample from a single window.
     uint64_t sample(char const* window) const {
         const uint64_t num_tmers = (m_w + m_k - 1) - m_t + 1;
         uint64_t p = -1;
         typename Hasher::hash_type min_hash(-1);
-        // Find the leftmost tmer with minimal hash.
         for (uint64_t i = 0; i != num_tmers; ++i) {
             char const* tmer = window + i;
             auto hash = Hasher::hash(tmer, m_w, m_t, m_seed);
@@ -120,8 +118,6 @@ struct mod_sampling {
         return pos;
     }
 
-    /// Sample from a stream.
-    /// If `clear`, this is the first call.
     uint64_t sample(char const* window, bool clear) {
         m_enum_tmers.eat(window, clear);
         uint64_t p = m_enum_tmers.next();
@@ -135,10 +131,10 @@ private:
 };
 
 template <typename Hasher>
-struct miniception {
-    static std::string name() { return "miniception"; }
+struct closed_syncmer {
+    static std::string name() { return "closed-syncmer"; }
 
-    miniception(uint64_t w, uint64_t k, uint64_t t, uint64_t seed)
+    closed_syncmer(uint64_t w, uint64_t k, uint64_t t, uint64_t seed)
         : m_w(w)
         , m_k(k)
         , m_t(t)
@@ -159,7 +155,8 @@ struct miniception {
             assert(tmer_p <= w0);
             auto hash = Hasher::hash(kmer, m_w, m_k, m_seed);
             pair_t<typename Hasher::hash_type> pair{1, hash};
-            if (tmer_p == 0 or tmer_p == w0) pair.preference = 0;  // context is charged
+            /* Prefer closed syncmers first, then kmers. */
+            if (tmer_p == 0 or tmer_p == w0) pair.preference = 0;
             if (pair < min_pair) {
                 min_pair = pair;
                 p = i;
@@ -178,7 +175,7 @@ struct miniception {
             uint64_t tmer_p = m_enum_tmers.next();
             assert(tmer_p <= w0);
             uint64_t preference = 1;
-            if (tmer_p == 0 or tmer_p == w0) preference = 0;  // context is charged
+            if (tmer_p == 0 or tmer_p == w0) preference = 0;
             m_enum_kmers.eat_with_preference(kmer, preference);
         }
         uint64_t p = m_enum_kmers.next();
@@ -188,6 +185,69 @@ struct miniception {
 
 private:
     uint64_t m_w, m_k, m_t, m_seed;
+    enumerator<Hasher> m_enum_tmers;
+    enumerator<Hasher> m_enum_kmers;
+};
+
+template <typename Hasher>
+struct open_syncmer {
+    static std::string name() { return "open-syncmer"; }
+
+    open_syncmer(uint64_t w, uint64_t k, uint64_t t, uint64_t seed)
+        : m_w(w)
+        , m_k(k)
+        , m_t(t)
+        , m_seed(seed)
+
+        /* one could try other positions but (k-t)/2 is optimal for conservation */
+        , m_p((m_k - m_t) / 2)
+
+        , m_enum_tmers(k - t + 1, t, seed)
+        , m_enum_kmers(w, k, seed) {}
+
+    uint64_t sample(char const* window) const {
+        const uint64_t w0 = m_k - m_t;
+        enumerator<Hasher> enum_tmers(w0 + 1, m_t, m_seed);
+        pair_t<typename Hasher::hash_type> min_pair{3, typename Hasher::hash_type(-1)};
+        uint64_t p = -1;
+        for (uint64_t i = 0; i != m_w; ++i) {
+            char const* kmer = window + i;
+            bool clear = i == 0;  // first kmer
+            enum_tmers.eat(kmer, clear);
+            uint64_t tmer_p = enum_tmers.next();
+            assert(tmer_p <= w0);
+            auto hash = Hasher::hash(kmer, m_w, m_k, m_seed);
+            pair_t<typename Hasher::hash_type> pair{1, hash};
+            /* Prefer open syncmers first, then kmers. */
+            if (tmer_p == m_p) pair.preference = 0;
+            if (pair < min_pair) {
+                min_pair = pair;
+                p = i;
+            }
+        }
+        assert(p < m_w);
+        return p;
+    }
+
+    uint64_t sample(char const* window, bool clear) {
+        const uint64_t w0 = m_k - m_t;
+        for (uint64_t i = clear ? 0 : m_w - 1; i != m_w; ++i) {
+            char const* kmer = window + i;
+            m_enum_tmers.eat(kmer, i == 0);
+            uint64_t tmer_p = m_enum_tmers.next();
+            assert(tmer_p <= w0);
+            uint64_t preference = 1;
+            if (tmer_p == m_p) preference = 0;
+            m_enum_kmers.eat_with_preference(kmer, preference);
+        }
+        uint64_t p = m_enum_kmers.next();
+        assert(p < m_w);
+        return p;
+    }
+
+private:
+    uint64_t m_w, m_k, m_t, m_seed;
+    uint64_t m_p;  // if smallest tmer in kmer begins at position p, then it is an open syncmer
     enumerator<Hasher> m_enum_tmers;
     enumerator<Hasher> m_enum_kmers;
 };
@@ -218,6 +278,7 @@ struct open_closed_syncmer {
             assert(tmer_p <= w0);
             auto hash = Hasher::hash(kmer, m_w, m_k, m_seed);
             pair_t<typename Hasher::hash_type> pair{2, hash};
+            /* Prefer open syncmers first, then closed syncmers, then kmers. */
             if (tmer_p == mid_w0) pair.preference = 0;
             if (tmer_p == 0 or tmer_p == w0) pair.preference = 1;
             if (pair < min_pair) {
@@ -251,6 +312,23 @@ private:
     uint64_t m_w, m_k, m_t, m_seed;
     enumerator<Hasher> m_enum_tmers;
     enumerator<Hasher> m_enum_kmers;
+};
+
+/*
+    Miniception samples the smallest closed syncmer from a window.
+*/
+template <typename Hasher>
+struct miniception {
+    static std::string name() { return "miniception"; }
+
+    miniception(uint64_t w, uint64_t k, uint64_t t, uint64_t seed) : m_alg(w, k, t, seed) {}
+
+    uint64_t sample(char const* window) const { return m_alg.sample(window); }
+
+    uint64_t sample(char const* window, bool clear) { return m_alg.sample(window, clear); }
+
+private:
+    closed_syncmer<Hasher> m_alg;
 };
 
 template <typename Hasher>
