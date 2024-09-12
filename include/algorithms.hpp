@@ -306,39 +306,24 @@ struct open_closed_syncmer {
 
     uint64_t sample(char const* window, bool clear) {
         const uint64_t w0 = m_k - m_t;
-        // const uint64_t offset = w0 / 2;
-        // const uint64_t offset = w0 % m_w;
         const uint64_t offset = (w0 % m_w) / 2;
         for (uint64_t i = clear ? 0 : m_w - 1; i != m_w; ++i) {
             char const* kmer = window + i;
             m_enum_tmers.eat(kmer, i == 0);
             uint64_t tmer_p = m_enum_tmers.next();
             assert(tmer_p <= w0);
-            uint64_t preference = 4;
-            /*
-                Prefer open syncmers first, then, closed syncmers when k is small;
-                viceversa, when k is large, prefer closed syncmers forst, then open syncmers.
-                This trick improves a little bit the density for large k,
-                while preserving that for small k.
-            */
-            // if (tmer_p == offset/2) preference = m_k > 2 * m_w ? 1 : 0;
-            // if (tmer_p == 0 or tmer_p == offset) preference = m_k > 2 * m_w ? 0 : 1;
+            uint64_t preference = 2;
 
-            // ok
-            // if (tmer_p % m_w == offset) preference = 0;
-            // if (tmer_p == 0 or tmer_p == w0) preference = 1;
-
-            // even better
             if (tmer_p % m_w == offset) preference = 0;
-            if (tmer_p == 0) preference = 1;
-            if (tmer_p == w0) preference = 2;
+            if (tmer_p == 0 or tmer_p == w0) preference = 1;
 
-            // if (tmer_p % m_w == offset) preference = m_k > 2 * m_w ? 3 : 1;
-            // if (tmer_p == 0) preference = m_k > 2 * m_w ? 2 : 2;
-            // if (tmer_p == w0) preference = m_k > 2 * m_w ? 1 : 3;
+            // hash tmers when preference is 0
+            m_enum_kmers.eat_with_preference(kmer + (preference == 0 ? tmer_p : 0),  //
+                                             preference == 0 ? m_t : m_k,            //
+                                             preference);
 
-            m_enum_kmers.eat_with_preference(kmer + (preference == 0 ? tmer_p : 0),
-                                             preference == 0 ? m_t : m_k, preference);
+            // always hash kmers
+            // m_enum_kmers.eat_with_preference(kmer, m_k, preference);
         }
         uint64_t p = m_enum_kmers.next();
         assert(p < m_w);

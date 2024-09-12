@@ -67,9 +67,9 @@ double run(std::istream& is,                                                    
             if (!bench) {
                 uint64_t absolute_pos = i + p;  // absolute + relative
 
-                uint64_t jump_len = absolute_pos - (positions.empty() ? 0 : positions.back());
-                assert(jump_len <= w);
-                jump_lengths[jump_len] += 1;
+                // uint64_t jump_len = absolute_pos - (positions.empty() ? 0 : positions.back());
+                // assert(jump_len <= w);
+                // jump_lengths[jump_len] += 1;
 
                 positions.push_back(absolute_pos);
             }
@@ -114,22 +114,23 @@ double run(std::istream& is,                                                    
 
     double density = static_cast<double>(num_sampled_kmers) / num_kmers;
 
-    uint64_t num_total_jumps =
-        std::accumulate(jump_lengths.begin(), jump_lengths.end(), uint64_t(0));
-    assert(num_total_jumps == tot_num_windows);
-    double expected_jump_len = 0.0;
-    std::cout << "total jumps = " << num_total_jumps << std::endl;
-    std::cout << "jump len distribution:" << std::endl;
-    for (uint64_t i = 1;  // ignore jumps of length 0 and rescale probabilities
-         i != jump_lengths.size(); ++i) {
-        double prob = static_cast<double>(jump_lengths[i]) / (num_total_jumps - jump_lengths[0]);
-        expected_jump_len += i * prob;
-        std::cout << "  num. jumps of len " << i << " = " << jump_lengths[i];
-        std::cout << "  prob(jump_len=" << i << ")=" << prob << std::endl;
-    }
+    // uint64_t num_total_jumps =
+    //     std::accumulate(jump_lengths.begin(), jump_lengths.end(), uint64_t(0));
+    // assert(num_total_jumps == tot_num_windows);
+    // double expected_jump_len = 0.0;
+    // std::cout << "total jumps = " << num_total_jumps << std::endl;
+    // std::cout << "jump len distribution:" << std::endl;
+    // for (uint64_t i = 1;  // ignore jumps of length 0 and rescale probabilities
+    //      i != jump_lengths.size(); ++i) {
+    //     double prob = static_cast<double>(jump_lengths[i]) / (num_total_jumps - jump_lengths[0]);
+    //     expected_jump_len += i * prob;
+    //     std::cout << "  num. jumps of len " << i << " = " << jump_lengths[i];
+    //     std::cout << "  prob(jump_len=" << i << ")=" << prob << std::endl;
+    // }
 
-    std::cout << "expected_jump_len = " << expected_jump_len << std::endl;
-    std::cout << "computed density = 1/expected_jump_len = " << 1 / expected_jump_len << std::endl;
+    // std::cout << "expected_jump_len = " << expected_jump_len << std::endl;
+    // std::cout << "computed density = 1/expected_jump_len = " << 1 / expected_jump_len <<
+    // std::endl;
 
     os << w << ',' << k << ',' << t << ',' << density << ',';
 
@@ -163,6 +164,7 @@ double run(std::istream& is,                                                    
 
     os << (is_forward ? "YES" : "NO");
     std::cerr << buffer.str() << std::endl;
+
     return density;
 }
 
@@ -190,6 +192,7 @@ void run(std::string const& input_filename, std::string const& alg,  //
          const bool bench, const bool stream)                        //
 {
     const uint64_t r = 4;
+    const uint64_t R = r + 2;
 
     if (alg == "minimizer") {
         const uint64_t t = k;
@@ -221,13 +224,17 @@ void run(std::string const& input_filename, std::string const& alg,  //
     else if (alg == "open-closed-syncmer") {
         // const uint64_t t = k > 2 * w ? std::max(k - 2 * w, r) : r;
         // const uint64_t t = k > w ? std::max(k - w, r) : r;
-        const uint64_t t = 4;
+
+        // use two value of t: one small and one larger
+        uint64_t t = r;
+        if (k > R and (k % w == t + 1 or k % w == t)) t = R;
+
         run<open_closed_syncmer<Hasher>>(input_filename, k, w, t, seed, bench, stream);
 
         // compute the best t
         // uint64_t best_t = 1;
         // double best_density = 1.0;
-        // for (uint64_t t = 1; t != k; ++t) {
+        // for (uint64_t t = 1; t != std::min<uint64_t>(k, 13); ++t) {
         //     double density =
         //         run<open_closed_syncmer<Hasher>>(input_filename, k, w, t, seed, bench, stream);
         //     if (density < best_density) {
@@ -235,7 +242,8 @@ void run(std::string const& input_filename, std::string const& alg,  //
         //         best_t = t;
         //     }
         // }
-        // std::cerr << "for k=" << k << " best_t=" << best_t << std::endl;
+        // std::cerr << "k=" << k << " best_t=" << best_t << " best_density=" << best_density <<
+        // '\n';
     }
 
     else if (alg == "mod-minimizer") {
