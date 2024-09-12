@@ -192,7 +192,6 @@ void run(std::string const& input_filename, std::string const& alg,  //
          const bool bench, const bool stream)                        //
 {
     const uint64_t r = 4;
-    const uint64_t R = r + 2;
 
     if (alg == "minimizer") {
         const uint64_t t = k;
@@ -225,10 +224,7 @@ void run(std::string const& input_filename, std::string const& alg,  //
         // const uint64_t t = k > 2 * w ? std::max(k - 2 * w, r) : r;
         // const uint64_t t = k > w ? std::max(k - w, r) : r;
 
-        // use two value of t: one small and one larger
         uint64_t t = r;
-        if (k > R and (k % w == t + 1 or k % w == t)) t = R;
-
         run<open_closed_syncmer<Hasher>>(input_filename, k, w, t, seed, bench, stream);
 
         // compute the best t

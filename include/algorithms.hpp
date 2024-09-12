@@ -312,10 +312,13 @@ struct open_closed_syncmer {
             m_enum_tmers.eat(kmer, i == 0);
             uint64_t tmer_p = m_enum_tmers.next();
             assert(tmer_p <= w0);
-            uint64_t preference = 2;
 
-            if (tmer_p % m_w == offset) preference = 0;
-            if (tmer_p == 0 or tmer_p == w0) preference = 1;
+            uint64_t preference = 2;
+            if (tmer_p % m_w == offset) {
+                preference = 0;
+            } else if (tmer_p == 0 or tmer_p == w0) {
+                preference = 1;
+            }
 
             // hash tmers when preference is 0
             m_enum_kmers.eat_with_preference(kmer + (preference == 0 ? tmer_p : 0),  //
