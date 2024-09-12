@@ -240,6 +240,7 @@ void run(std::string const& input_filename, std::string const& alg,  //
         // }
         // std::cerr << "k=" << k << " best_t=" << best_t << " best_density=" << best_density <<
         // '\n';
+        // std::cerr << best_density << '\n';
     }
 
     else if (alg == "mod-minimizer") {

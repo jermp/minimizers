@@ -320,13 +320,10 @@ struct open_closed_syncmer {
                 preference = 1;
             }
 
-            // hash tmers when preference is 0
+            // hash tmers rather than kmers when preference is 0
             m_enum_kmers.eat_with_preference(kmer + (preference == 0 ? tmer_p : 0),  //
                                              preference == 0 ? m_t : m_k,            //
                                              preference);
-
-            // always hash kmers
-            // m_enum_kmers.eat_with_preference(kmer, m_k, preference);
         }
         uint64_t p = m_enum_kmers.next();
         assert(p < m_w);
