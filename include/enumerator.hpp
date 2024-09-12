@@ -66,7 +66,8 @@ struct enumerator {
 
     /// Add the last kmer of the pointed-to window, or all kmers when `clear` is true.
     void eat(char const* window, bool clear) {
-        for (uint64_t i = clear ? 0 : m_w - 1; i != m_w; ++i) eat_with_preference(window + i, 0);
+        for (uint64_t i = clear ? 0 : m_w - 1; i != m_w; ++i)
+            eat_with_preference(window + i, m_k, 0);
     }
 
     /// Return the position of the minimal element in the current window.
@@ -81,9 +82,9 @@ struct enumerator {
 
     /// Add the pointed-to kmer with a preference order:
     /// 0, 1, 2, ... (0 is highest preference)
-    void eat_with_preference(char const* kmer, uint64_t preference) {
+    void eat_with_preference(char const* kmer, const uint64_t k, uint64_t preference) {
         // hash the kmer.
-        pair_t<hash_type> hash{preference, Hasher::hash(kmer, m_w, m_k, m_seed)};
+        pair_t<hash_type> hash{preference, Hasher::hash(kmer, m_w, k, m_seed)};
 
         /* Removes from front elements which are no longer in the window */
         while (!m_q.empty() and m_position >= m_w and m_q.front().position <= m_position - m_w) {
@@ -93,15 +94,6 @@ struct enumerator {
         while (!m_q.empty() and hash < m_q.back().hash) m_q.pop_back();
 
         m_q.push_back({hash, m_position});
-        m_position += 1;
-    }
-
-    /// Advance the sliding window but do not insert a new kmer.
-    void skip() {
-        /* Removes from front elements which are no longer in the window */
-        while (!m_q.empty() and m_position >= m_w and m_q.front().position <= m_position - m_w) {
-            m_q.pop_front();
-        }
         m_position += 1;
     }
 
