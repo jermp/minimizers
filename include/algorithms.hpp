@@ -177,6 +177,7 @@ struct closed_syncmer {
             uint64_t preference = 1;
             if (tmer_p == 0 or tmer_p == w0) preference = 0;
             m_enum_kmers.eat_with_preference(kmer, m_k, preference);
+            // m_enum_kmers.eat_with_preference(kmer + tmer_p, m_t, preference);
         }
         uint64_t p = m_enum_kmers.next();
         assert(p < m_w);
@@ -239,6 +240,7 @@ struct open_syncmer {
             uint64_t preference = 1;
             if (tmer_p == m_p) preference = 0;
             m_enum_kmers.eat_with_preference(kmer, m_k, preference);
+            // m_enum_kmers.eat_with_preference(kmer + tmer_p, m_t, preference);
         }
         uint64_t p = m_enum_kmers.next();
         assert(p < m_w);
@@ -261,14 +263,16 @@ struct open_closed_syncmer {
         , m_k(k)
         , m_t(t)
         , m_seed(seed)
+
+        , m_p(((m_k - m_t) % m_w) / 2)
+
         , m_enum_tmers(k - t + 1, t, seed)
         , m_enum_kmers(w, k, seed) {}
 
     uint64_t sample(char const* window) const {
         const uint64_t w0 = m_k - m_t;
-        // const uint64_t mid_w0 = w0 / 2;
         enumerator<Hasher> enum_tmers(w0 + 1, m_t, m_seed);
-        pair_t<typename Hasher::hash_type> min_pair{3, typename Hasher::hash_type(-1)};
+        pair_t<typename Hasher::hash_type> min_pair{2, typename Hasher::hash_type(-1)};
         uint64_t p = -1;
         for (uint64_t i = 0; i != m_w; ++i) {
             char const* kmer = window + i;
@@ -276,24 +280,17 @@ struct open_closed_syncmer {
             enum_tmers.eat(kmer, clear);
             uint64_t tmer_p = enum_tmers.next();
             assert(tmer_p <= w0);
+
+            // Warning: always hash kmers
+
             auto hash = Hasher::hash(kmer, m_w, m_k, m_seed);
             pair_t<typename Hasher::hash_type> pair{2, hash};
 
-            if (tmer_p == (w0 % m_w) / 2) pair.preference = 0;
-            if (tmer_p == 0 or tmer_p == w0 % m_w) pair.preference = 1;
-
-            /*
-                Prefer open syncmers first, then, closed syncmers when k is small;
-                viceversa, when k is large, prefer closed syncmers forst, then open syncmers.
-                This trick improves a little bit the density for large k,
-                while preserving that for small k.
-            */
-            // if (tmer_p == mid_w0) pair.preference = m_k > 2 * m_w ? 1 : 0;
-            // if (tmer_p == 0 or tmer_p == w0) pair.preference = m_k > 2 * m_w ? 0 : 1;
-
-            /* Prefer open syncmers first, then closed syncmers, then kmers. */
-            // if (tmer_p == mid_w0) pair.preference = 0;
-            // if (tmer_p == 0 or tmer_p == w0) pair.preference = 1;
+            if (tmer_p % m_w == m_p) {
+                pair.preference = 0;
+            } else if (tmer_p == 0 or tmer_p == w0) {
+                pair.preference = 1;
+            }
 
             if (pair < min_pair) {
                 min_pair = pair;
@@ -306,7 +303,6 @@ struct open_closed_syncmer {
 
     uint64_t sample(char const* window, bool clear) {
         const uint64_t w0 = m_k - m_t;
-        const uint64_t offset = (w0 % m_w) / 2;
         for (uint64_t i = clear ? 0 : m_w - 1; i != m_w; ++i) {
             char const* kmer = window + i;
             m_enum_tmers.eat(kmer, i == 0);
@@ -314,7 +310,7 @@ struct open_closed_syncmer {
             assert(tmer_p <= w0);
 
             uint64_t preference = 2;
-            if (tmer_p % m_w == offset) {
+            if (tmer_p % m_w == m_p) {
                 preference = 0;
             } else if (tmer_p == 0 or tmer_p == w0) {
                 preference = 1;
@@ -324,6 +320,12 @@ struct open_closed_syncmer {
             m_enum_kmers.eat_with_preference(kmer + (preference == 0 ? tmer_p : 0),  //
                                              preference == 0 ? m_t : m_k,            //
                                              preference);
+
+            // // always break ties by kmer hash
+            // m_enum_kmers.eat_with_preference(kmer, m_k, preference);
+
+            // // always break ties by tmer hash
+            // m_enum_kmers.eat_with_preference(kmer + tmer_p, m_t, preference);
         }
         uint64_t p = m_enum_kmers.next();
         assert(p < m_w);
@@ -332,6 +334,7 @@ struct open_closed_syncmer {
 
 private:
     uint64_t m_w, m_k, m_t, m_seed;
+    uint64_t m_p;  // if smallest tmer in kmer begins at position p, then it is an open syncmer
     enumerator<Hasher> m_enum_tmers;
     enumerator<Hasher> m_enum_kmers;
 };

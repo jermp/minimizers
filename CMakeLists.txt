@@ -37,7 +37,4 @@ include_directories(.)
 include_directories(include)
 
 add_executable(density tool/density.cpp)
-target_link_libraries(density
-  z
-)
-add_executable(generate_random_fasta tool/generate_random_fasta.cpp)
+add_executable(generate_random_sequence tool/generate_random_sequence.cpp)

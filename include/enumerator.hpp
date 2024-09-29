@@ -4,7 +4,6 @@
 
 namespace minimizers {
 
-/// A fixed-size ring buffer that can hold up to `size` elements.
 template <typename T>
 struct fixed_size_deque {
     fixed_size_deque() {}
@@ -36,6 +35,7 @@ struct fixed_size_deque {
 
     T const& front() const { return m_buffer[m_begin]; }
     T const& back() const { return m_end == 0 ? m_buffer.back() : m_buffer[m_end - 1]; }
+    uint64_t size() const { return m_size; }
 
 private:
     uint64_t m_begin;
@@ -64,14 +64,14 @@ struct enumerator {
     enumerator(uint64_t w, uint64_t k, uint64_t seed)
         : m_w(w), m_k(k), m_seed(seed), m_position(0), m_window(0), m_q(w) {}
 
-    /// Add the last kmer of the pointed-to window, or all kmers when `clear` is true.
+    // Add the last kmer of the pointed-to window, or all kmers when "clear" is true.
     void eat(char const* window, bool clear) {
-        for (uint64_t i = clear ? 0 : m_w - 1; i != m_w; ++i)
+        for (uint64_t i = clear ? 0 : m_w - 1; i != m_w; ++i) {
             eat_with_preference(window + i, m_k, 0);
+        }
     }
 
-    /// Return the position of the minimal element in the current window.
-    /// MUST be called after each eat() or skip() to keep m_window in sync with m_position.
+    // Return the position of the minimal element in the current window.
     uint64_t next() {
         assert(!m_q.empty());
         uint64_t p = m_q.front().position - m_window;
@@ -80,10 +80,9 @@ struct enumerator {
         return p;
     }
 
-    /// Add the pointed-to kmer with a preference order:
-    /// 0, 1, 2, ... (0 is highest preference)
+    // Add the pointed-to kmer with a preference order:
+    //    0, 1, 2, ... (0 is highest preference)
     void eat_with_preference(char const* kmer, const uint64_t k, uint64_t preference) {
-        // hash the kmer.
         pair_t<hash_type> hash{preference, Hasher::hash(kmer, m_w, k, m_seed)};
 
         /* Removes from front elements which are no longer in the window */
@@ -94,20 +93,17 @@ struct enumerator {
         while (!m_q.empty() and hash < m_q.back().hash) m_q.pop_back();
 
         m_q.push_back({hash, m_position});
+        assert(m_q.size() <= m_w);
+
         m_position += 1;
     }
 
 private:
-    /// Fixed value of w.
     uint64_t m_w;
-    /// Fixed value of k.
     uint64_t m_k;
-    /// Fixed seed for the hash function.
     uint64_t m_seed;
-    /// The absolute position of the next-to-be-inserted kmer.
-    uint64_t m_position;
-    /// The absolute position of the current window.
-    uint64_t m_window;
+    uint64_t m_position;  // The absolute position of the next-to-be-inserted kmer.
+    uint64_t m_window;    // The absolute position of the current window.
 
     struct kmer_t {
         kmer_t() {}
