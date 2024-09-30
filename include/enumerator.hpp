@@ -55,7 +55,6 @@ struct pair_t {
     }
 };
 
-/// Iterate the minimizers of a text by keeping a queue of optimal kmers.
 template <typename Hasher>
 struct enumerator {
     typedef typename Hasher::hash_type hash_type;
@@ -83,7 +82,7 @@ struct enumerator {
     // Add the pointed-to kmer with a preference order:
     //    0, 1, 2, ... (0 is highest preference)
     void eat_with_preference(char const* kmer, const uint64_t k, uint64_t preference) {
-        pair_t<hash_type> hash{preference, Hasher::hash(kmer, m_w, k, m_seed)};
+        pair_t<hash_type> hash{preference, Hasher::hash(kmer, k, m_seed)};
 
         /* Removes from front elements which are no longer in the window */
         while (!m_q.empty() and m_position >= m_w and m_q.front().position <= m_position - m_w) {

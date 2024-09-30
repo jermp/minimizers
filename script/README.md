@@ -7,4 +7,3 @@ First generate a string of i.i.d. random characters (here, of 10 million charact
 and then, from within the directory where the `density` tools is available (e.g., `/build`), run
 
     bash ../script/varying_k.sh
-    bash ../script/varying_w.sh
