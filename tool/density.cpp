@@ -114,65 +114,51 @@ void run(std::string const& input_filename, std::string const& alg,  //
     */
     uint64_t r = alphabet_size <= 4 ? 4 : 1;
 
-    if (alg == "M") {
+    if (alg == "M" or alg == "mod-M") {
         typedef minimizer<Hasher> anchor_type;
-        anchor_type anchor(w, k, -1, seed);
+        uint64_t t = r + ((k - r) % w);
+        uint64_t s = -1;  // not used
+        if (alg == "M") t = k;
+        anchor_type anchor(w + k - t, t, s, seed);
         mod_sampling<anchor_type> alg(w, k, anchor);
         run(sequence, alg, bench, stream);
     }
 
-    else if (alg == "C") {
+    else if (alg == "C" or alg == "mod-C") {
         typedef closed_syncmer<Hasher> anchor_type;
-        const uint64_t t = k > w ? std::max(k - w, r) : r;
-        anchor_type anchor(w, k, t, seed);
+        uint64_t t = r + ((k - r) % w);
+        uint64_t s = r;
+        if (alg == "C") {
+            t = k;
+            s = k > w ? std::max(k - w, r) : r;
+        }
+        anchor_type anchor(w + k - t, t, s, seed);
         mod_sampling<anchor_type> alg(w, k, anchor);
         run(sequence, alg, bench, stream);
     }
 
-    else if (alg == "O") {
+    else if (alg == "O" or alg == "mod-O") {
         typedef open_syncmer<Hasher> anchor_type;
-        const uint64_t t = k > w ? std::max(k - w, r) : r;
-        anchor_type anchor(w, k, t, seed);
+        uint64_t t = r + ((k - r) % w);
+        uint64_t s = r;
+        if (alg == "C") {
+            t = k;
+            s = k > w ? std::max(k - w, r) : r;
+        }
+        anchor_type anchor(w + k - t, t, s, seed);
         mod_sampling<anchor_type> alg(w, k, anchor);
         run(sequence, alg, bench, stream);
     }
 
-    else if (alg == "OC") {
+    else if (alg == "OC" or alg == "mod-OC") {
         typedef open_closed_syncmer<Hasher> anchor_type;
-        const uint64_t t = k > w ? std::max(k - w, r) : r;
-        anchor_type anchor(w, k, t, seed);
-        mod_sampling<anchor_type> alg(w, k, anchor);
-        run(sequence, alg, bench, stream);
-    }
-
-    else if (alg == "mod-M") {
-        const uint64_t t = r + ((k - r) % w);
-        typedef minimizer<Hasher> anchor_type;
-        anchor_type anchor(w + k - t, t, -1, seed);
-        mod_sampling<anchor_type> alg(w, k, anchor);
-        run(sequence, alg, bench, stream);
-    }
-
-    else if (alg == "mod-C") {
-        const uint64_t t = r + ((k - r) % w);
-        typedef closed_syncmer<Hasher> anchor_type;
-        anchor_type anchor(w + k - t, t, r, seed);
-        mod_sampling<anchor_type> alg(w, k, anchor);
-        run(sequence, alg, bench, stream);
-    }
-
-    else if (alg == "mod-O") {
-        const uint64_t t = r + ((k - r) % w);
-        typedef open_syncmer<Hasher> anchor_type;
-        anchor_type anchor(w + k - t, t, r, seed);
-        mod_sampling<anchor_type> alg(w, k, anchor);
-        run(sequence, alg, bench, stream);
-    }
-
-    else if (alg == "mod-OC") {
-        const uint64_t t = r + ((k - r) % w);
-        typedef open_closed_syncmer<Hasher> anchor_type;
-        anchor_type anchor(w + k - t, t, r, seed);
+        uint64_t t = r + ((k - r) % w);
+        uint64_t s = r;
+        if (alg == "C") {
+            t = k;
+            s = k > w ? std::max(k - w, r) : r;
+        }
+        anchor_type anchor(w + k - t, t, s, seed);
         mod_sampling<anchor_type> alg(w, k, anchor);
         run(sequence, alg, bench, stream);
     }
