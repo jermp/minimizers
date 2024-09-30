@@ -24,7 +24,7 @@ double run(std::string const& sequence,                                         
     typedef std::chrono::high_resolution_clock clock_type;
 
     uint64_t num_sampled_kmers = 0;
-    std::vector<uint64_t> jump_lengths(w + 1, 0);  // 0, 1, 2, ..., w
+    // std::vector<uint64_t> jump_lengths(w + 1, 0);  // 0, 1, 2, ..., w
     bool is_forward = true;
     std::vector<uint64_t> positions;  // of sampled kmers
 
@@ -78,7 +78,7 @@ double run(std::string const& sequence,                                         
     std::stringbuf buffer;
     std::ostream os(&buffer);
 
-    // std::cout << "  is_forward = " << (is_forward ? "YES" : "NO")
+    std::cout << "  is_forward = " << (is_forward ? "YES" : "NO") << std::endl;
     //           << " (expected = " << (is_not_forward(k, w, t) ? "NO)" : "YES)") << std::endl;
 
     double density = static_cast<double>(num_sampled_kmers) / num_kmers;
@@ -190,21 +190,6 @@ void run(std::string const& input_filename, std::string const& alg,  //
     else if (alg == "open-closed-syncmer") {
         uint64_t t = r;
         run<open_closed_syncmer<Hasher>>(sequence, k, w, t, seed, bench, stream);
-
-        // compute the best t
-        // uint64_t best_t = 1;
-        // double best_density = 1.0;
-        // for (uint64_t t = 1; t != std::min<uint64_t>(k, 13); ++t) {
-        //     double density =
-        //         run<open_closed_syncmer<Hasher>>(sequence, k, w, t, seed, bench, stream);
-        //     if (density < best_density) {
-        //         best_density = density;
-        //         best_t = t;
-        //     }
-        // }
-        // std::cerr << "k=" << k << " best_t=" << best_t << " best_density=" << best_density <<
-        // '\n';
-        // std::cerr << best_density << '\n';
     }
 
     else if (alg == "mod-minimizer") {

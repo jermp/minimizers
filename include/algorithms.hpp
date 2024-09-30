@@ -162,7 +162,6 @@ struct closed_syncmer {
                 p = i;
             }
         }
-        assert(min_pair.preference == 0);
         assert(p < m_w);
         return p;
     }
@@ -209,7 +208,7 @@ struct open_syncmer {
     uint64_t sample(char const* window) const {
         const uint64_t w0 = m_k - m_t;
         enumerator<Hasher> enum_tmers(w0 + 1, m_t, m_seed);
-        pair_t<typename Hasher::hash_type> min_pair{3, typename Hasher::hash_type(-1)};
+        pair_t<typename Hasher::hash_type> min_pair{2, typename Hasher::hash_type(-1)};
         uint64_t p = -1;
         for (uint64_t i = 0; i != m_w; ++i) {
             char const* kmer = window + i;
