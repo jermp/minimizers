@@ -89,9 +89,9 @@ double run(std::string const& sequence, Alg alg, const bool bench, const bool st
 }
 
 template <typename Hasher>
-void run(std::string const& input_filename, std::string const& alg,  //
-         const uint64_t k, const uint64_t w, const uint64_t seed,    //
-         const bool bench, const bool stream)                        //
+void run(std::string const& input_filename, std::string const& alg_name,  //
+         const uint64_t k, const uint64_t w, const uint64_t seed,         //
+         const bool bench, const bool stream)                             //
 {
     std::ifstream is(input_filename.c_str(), std::ifstream::binary);
     if (!is.good()) throw std::runtime_error("error in opening the file '" + input_filename + "'");
@@ -107,6 +107,8 @@ void run(std::string const& input_filename, std::string const& alg,  //
     is.read(sequence.data(), sequence_length);
     is.close();
 
+    typedef syncmer<Hasher> anchor_type;
+
     /*
         Choose r based on alphabet size.
         (There are just examples based on our experiments:
@@ -114,58 +116,31 @@ void run(std::string const& input_filename, std::string const& alg,  //
     */
     uint64_t r = alphabet_size <= 4 ? 4 : 1;
 
-    if (alg == "M" or alg == "mod-M") {
-        typedef minimizer<Hasher> anchor_type;
-        uint64_t t = r + ((k - r) % w);
-        uint64_t s = -1;  // not used
-        if (alg == "M") t = k;
-        anchor_type anchor(w + k - t, t, s, seed);
-        mod_sampling<anchor_type> alg(w, k, anchor);
-        run(sequence, alg, bench, stream);
+    uint64_t t = k;
+    uint64_t s = k > w ? std::max(k - w, r) : r;
+
+    if (util::begins_with(alg_name, "mod")) {
+        t = r + ((k - r) % w);
+        s = r;
     }
 
-    else if (alg == "C" or alg == "mod-C") {
-        typedef closed_syncmer<Hasher> anchor_type;
-        uint64_t t = r + ((k - r) % w);
-        uint64_t s = r;
-        if (alg == "C") {
-            t = k;
-            s = k > w ? std::max(k - w, r) : r;
-        }
-        anchor_type anchor(w + k - t, t, s, seed);
-        mod_sampling<anchor_type> alg(w, k, anchor);
-        run(sequence, alg, bench, stream);
+    priority p;
+    if (alg_name == "M" or alg_name == "mod-M") {
+        p = {0, 0, 0};
+    } else if (alg_name == "C" or alg_name == "mod-C") {
+        p = {1, 0, 2};
+    } else if (alg_name == "O" or alg_name == "mod-O") {
+        p = {1, 2, 0};
+    } else if (alg_name == "OC" or alg_name == "mod-OC") {
+        p = {2, 1, 0};
+    } else {
+        std::cerr << "Error: '" << alg_name << "' does not correspond to any method" << std::endl;
     }
 
-    else if (alg == "O" or alg == "mod-O") {
-        typedef open_syncmer<Hasher> anchor_type;
-        uint64_t t = r + ((k - r) % w);
-        uint64_t s = r;
-        if (alg == "C") {
-            t = k;
-            s = k > w ? std::max(k - w, r) : r;
-        }
-        anchor_type anchor(w + k - t, t, s, seed);
-        mod_sampling<anchor_type> alg(w, k, anchor);
-        run(sequence, alg, bench, stream);
-    }
-
-    else if (alg == "OC" or alg == "mod-OC") {
-        typedef open_closed_syncmer<Hasher> anchor_type;
-        uint64_t t = r + ((k - r) % w);
-        uint64_t s = r;
-        if (alg == "C") {
-            t = k;
-            s = k > w ? std::max(k - w, r) : r;
-        }
-        anchor_type anchor(w + k - t, t, s, seed);
-        mod_sampling<anchor_type> alg(w, k, anchor);
-        run(sequence, alg, bench, stream);
-    }
-
-    else {
-        std::cerr << "Error: '" << alg << "' does not correspond to any method" << std::endl;
-    }
+    parameters params(w + k - t, t, s, seed, p);
+    anchor_type anchor(params);
+    mod_sampling<anchor_type> alg(w, k, anchor);
+    run(sequence, alg, bench, stream);
 }
 
 void run(std::string const& input_filename, std::string const& alg,                          //
