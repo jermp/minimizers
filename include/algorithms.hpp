@@ -68,9 +68,9 @@ struct syncmer {
             pair_t<typename Hasher::hash_type> pair{m_params.p.kmer, hash};
 
             if (tmer_p % m_params.w == m_offset) {
-                pair.preference = m_params.p.open_syncmer;
+                pair.priority = m_params.p.open_syncmer;
             } else if (tmer_p == 0 or tmer_p == w0) {
-                pair.preference = m_params.p.closed_syncmer;
+                pair.priority = m_params.p.closed_syncmer;
             }
 
             if (pair < min_pair) {
@@ -98,7 +98,7 @@ struct syncmer {
                 preference = m_params.p.closed_syncmer;
             }
 
-            m_enum_kmers.eat_with_preference(kmer, m_params.k, preference);
+            m_enum_kmers.eat_with_priority(kmer, m_params.k, preference);
         }
 
         uint64_t p = m_enum_kmers.next();

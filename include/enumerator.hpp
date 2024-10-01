@@ -46,11 +46,11 @@ private:
 
 template <typename HashType>
 struct pair_t {
-    uint64_t preference;
+    uint64_t priority;
     HashType hash;
     bool operator<(pair_t other) {
-        if (preference < other.preference) return true;
-        if (preference == other.preference) return hash < other.hash;
+        if (priority < other.priority) return true;
+        if (priority == other.priority) return hash < other.hash;
         return false;
     }
 };
@@ -66,7 +66,7 @@ struct enumerator {
     // Add the last kmer of the pointed-to window, or all kmers when "clear" is true.
     void eat(char const* window, bool clear) {
         for (uint64_t i = clear ? 0 : m_w - 1; i != m_w; ++i) {
-            eat_with_preference(window + i, m_k, 0);
+            eat_with_priority(window + i, m_k, 0);
         }
     }
 
@@ -79,10 +79,10 @@ struct enumerator {
         return p;
     }
 
-    // Add the pointed-to kmer with a preference order:
-    //    0, 1, 2, ... (0 is highest preference)
-    void eat_with_preference(char const* kmer, const uint64_t k, uint64_t preference) {
-        pair_t<hash_type> hash{preference, Hasher::hash(kmer, k, m_seed)};
+    // Add the pointed-to kmer with a priority order:
+    //    0, 1, 2, ... (0 is highest priority)
+    void eat_with_priority(char const* kmer, const uint64_t k, uint64_t priority) {
+        pair_t<hash_type> hash{priority, Hasher::hash(kmer, k, m_seed)};
 
         /* Removes from front elements which are no longer in the window */
         while (!m_q.empty() and m_position >= m_w and m_q.front().position <= m_position - m_w) {
