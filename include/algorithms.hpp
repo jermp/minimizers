@@ -98,7 +98,11 @@ struct syncmer {
                 preference = m_params.p.closed_syncmer;
             }
 
+            // compare kmers by kmer hash
             m_enum_kmers.eat_with_priority(kmer, m_params.k, preference);
+
+            // compare kmers by tmer hash
+            // m_enum_kmers.eat_with_priority(kmer + tmer_p, m_params.t, preference);
         }
 
         uint64_t p = m_enum_kmers.next();
