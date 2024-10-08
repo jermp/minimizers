@@ -7,7 +7,9 @@
 
 #include "external/cmd_line_parser/include/parser.hpp"
 #include "hasher.hpp"
-#include "algorithms.hpp"
+#include "mod_sampling.hpp"
+#include "syncmer.hpp"
+#include "double_decycling.hpp"
 
 template <typename T>
 static inline void do_not_optimize_away(T&& value) {
@@ -79,7 +81,7 @@ double run(std::string const& sequence, Alg alg, const bool bench, const bool st
     std::cout << "  num_kmers = " << num_kmers << std::endl;
     std::cout << "  num_windows = " << num_windows << std::endl;
     std::cout << "  density = " << density << std::endl;
-    std::cout << "  " << redundancy_in_density_as_factor(density, 1.0 / w)
+    std::cout << "  " << util::redundancy_in_density_as_factor(density, 1.0 / w)
               << "X away from lower bound 1/w = " << 1.0 / w << std::endl;
 
     os << (is_forward ? "YES" : "NO");
@@ -125,7 +127,15 @@ void run(std::string const& input_filename, std::string const& alg_name,  //
     }
 
     priority p;
-    if (alg_name == "M" or alg_name == "mod-M") {
+    if (alg_name == "DD" or alg_name == "mod-DD") {
+        p = {0, 0, 0};
+        parameters params(w + k - t, t, s, seed, p);
+        typedef double_decycling<Hasher> anchor_type;
+        anchor_type anchor(params);
+        mod_sampling<anchor_type> alg(w, k, anchor);
+        run(sequence, alg, bench, stream);
+        return;
+    } else if (alg_name == "M" or alg_name == "mod-M") {
         p = {0, 0, 0};
     } else if (alg_name == "C" or alg_name == "mod-C") {
         p = {1, 0, 2};
