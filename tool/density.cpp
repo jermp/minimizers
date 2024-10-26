@@ -7,7 +7,9 @@
 
 #include "external/cmd_line_parser/include/parser.hpp"
 #include "hasher.hpp"
-#include "algorithms.hpp"
+#include "mod_sampling.hpp"
+#include "syncmer.hpp"
+#include "double_decycling.hpp"
 
 template <typename T>
 static inline void do_not_optimize_away(T&& value) {
@@ -17,28 +19,25 @@ static inline void do_not_optimize_away(T&& value) {
 using namespace minimizers;
 
 template <typename Alg>
-double run(std::string const& sequence,                                                //
-           const uint64_t k, const uint64_t w, const uint64_t t, const uint64_t seed,  //
-           const bool bench, const bool stream)                                        //
-{
+double run(std::string const& sequence, Alg alg, const bool bench, const bool stream) {
     typedef std::chrono::high_resolution_clock clock_type;
 
     uint64_t num_sampled_kmers = 0;
     bool is_forward = true;
     std::vector<uint64_t> positions;  // of sampled kmers
 
-    Alg a(w, k, t, seed);
-
     auto duration = clock_type::duration::zero();
     auto start = clock_type::now();
 
+    const uint64_t w = alg.w();
+    const uint64_t k = alg.k();
     const uint64_t l = w + k - 1;  // num. symbols in window
     const uint64_t num_windows = sequence.length() - l + 1;
     const uint64_t num_kmers = sequence.length() - k + 1;
 
     for (uint64_t i = 0; i != num_windows; ++i) {
         char const* window = sequence.data() + i;
-        uint64_t p = stream ? a.sample(window, i == 0) : a.sample(window);
+        uint64_t p = stream ? alg.sample(window, i == 0) : alg.sample(window);
         assert(p < w);
         do_not_optimize_away(p);
         if (!bench) {
@@ -50,7 +49,7 @@ double run(std::string const& sequence,                                         
     auto stop = clock_type::now();
     duration += stop - start;
 
-    // Check forwardness outside main loop.
+    /* Check forwardness outside main loop. */
     for (uint64_t i = 0; i + 1 < positions.size(); i++) {
         if (positions[i] > positions[i + 1]) {
             is_forward = false;
@@ -76,24 +75,14 @@ double run(std::string const& sequence,                                         
 
     double density = static_cast<double>(num_sampled_kmers) / num_kmers;
 
-    os << w << ',' << k << ',' << t << ',' << density << ',';
+    os << w << ',' << k << ',' << density << ',';
 
     std::cout << "  num_sampled_kmers = " << num_sampled_kmers << std::endl;
     std::cout << "  num_kmers = " << num_kmers << std::endl;
     std::cout << "  num_windows = " << num_windows << std::endl;
-
     std::cout << "  density = " << density << std::endl;
-    std::cout << "  " << redundancy_in_density_as_factor(density, 1.0 / w)
+    std::cout << "  " << util::redundancy_in_density_as_factor(density, 1.0 / w)
               << "X away from lower bound 1/w = " << 1.0 / w << std::endl;
-
-    try {
-        double density_from_formula = closed_form_density(Alg::name(), k, w, t);
-        std::cout << "  calculation using closed formulas:\n";
-        std::cout << "     density = " << density_from_formula << std::endl;
-        std::cout << "     " << redundancy_in_density_as_factor(density_from_formula, 1.0 / w)
-                  << "X away from lower bound 1/w = " << 1.0 / w << std::endl;
-        // os << density_from_formula << ',';
-    } catch (std::runtime_error const& /*e*/) { os << ','; }
 
     os << (is_forward ? "YES" : "NO");
     std::cerr << buffer.str() << std::endl;
@@ -102,9 +91,9 @@ double run(std::string const& sequence,                                         
 }
 
 template <typename Hasher>
-void run(std::string const& input_filename, std::string const& alg,  //
-         const uint64_t k, const uint64_t w, const uint64_t seed,    //
-         const bool bench, const bool stream)                        //
+void run(std::string const& input_filename, std::string const& alg_name,  //
+         const uint64_t k, const uint64_t w, const uint64_t seed,         //
+         const bool bench, const bool stream)                             //
 {
     std::ifstream is(input_filename.c_str(), std::ifstream::binary);
     if (!is.good()) throw std::runtime_error("error in opening the file '" + input_filename + "'");
@@ -120,89 +109,48 @@ void run(std::string const& input_filename, std::string const& alg,  //
     is.read(sequence.data(), sequence_length);
     is.close();
 
+    typedef syncmer<Hasher> anchor_type;
+
     /*
         Choose r based on alphabet size.
         (There are just examples based on our experiments:
          we do not aim at being exhaustive here.)
     */
     uint64_t r = alphabet_size <= 4 ? 4 : 1;
+    uint64_t s = k > w ? std::max(k - w, r) : r;
+    uint64_t t = k;
 
-    if (alg == "minimizer") {
-        const uint64_t t = k;
-        run<mod_sampling<Hasher>>(sequence, k, w, t, seed, bench, stream);
+    if (util::begins_with(alg_name, "mod")) {
+        t = r + ((k - r) % w);
+        s = r;
     }
 
-    else if (alg == "lr-minimizer") {
-        if (k >= w + r) {
-            const uint64_t t = k - w;
-            run<mod_sampling<Hasher>>(sequence, k, w, t, seed, bench, stream);
-        } else {
-            std::cerr << "k must be at least w+r" << std::endl;
-        }
+    priority p;
+    if (alg_name == "DD" or alg_name == "mod-DD") {
+        p = {0, 0, 0};
+        parameters params(w + k - t, t, s, seed, p);
+        typedef double_decycling<Hasher> anchor_type;
+        anchor_type anchor(params);
+        mod_sampling<anchor_type> alg(w, k, anchor);
+        run(sequence, alg, bench, stream);
+        return;
+    } else if (alg_name == "M" or alg_name == "mod-M") {
+        p = {0, 0, 0};
+    } else if (alg_name == "C" or alg_name == "mod-C") {
+        p = {1, 0, 2};
+    } else if (alg_name == "O" or alg_name == "mod-O") {
+        p = {1, 2, 0};
+    } else if (alg_name == "OC" or alg_name == "mod-OC") {
+        p = {2, 1, 0};
+    } else {
+        std::cerr << "Error: '" << alg_name << "' does not correspond to any method" << std::endl;
+        return;
     }
 
-    else if (alg == "closed-syncmer") {
-        const uint64_t t = k > w ? std::max(k - w, r) : r;
-        run<closed_syncmer<Hasher>>(sequence, k, w, t, seed, bench, stream);
-    }
-
-    else if (alg == "open-syncmer") {
-        const uint64_t t = k > w ? std::max(k - w, r) : r;
-        run<open_syncmer<Hasher>>(sequence, k, w, t, seed, bench, stream);
-    }
-
-    else if (alg == "open-closed-syncmer") {
-        uint64_t t = r;
-        run<open_closed_syncmer<Hasher>>(sequence, k, w, t, seed, bench, stream);
-    }
-
-    else if (alg == "mod-minimizer") {
-        uint64_t t = r + ((k - r) % w);
-        run<mod_sampling<Hasher>>(sequence, k, w, t, seed, bench, stream);
-    }
-
-    else if (alg == "miniception") {
-        // Theorem 7 of the miniception paper proves an upper bound for k-w+1,
-        // but in practice they use k-w.
-        const uint64_t t = k > w ? std::max(k - w, r) : r;
-        run<miniception<Hasher>>(sequence, k, w, t, seed, bench, stream);
-    }
-
-    else if (alg == "rot-minimizer-alt") {
-        const uint64_t t = -1;  // not used
-        run<rotational_alt<Hasher>>(sequence, k, w, t, seed, bench, stream);
-    }
-
-    else if (alg == "rot-minimizer-orig") {
-        if (k % w == 0) {
-            const uint64_t t = -1;  // not used
-            run<rotational_orig<Hasher>>(sequence, k, w, t, seed, bench, stream);
-        } else {
-            std::cerr << "w must divide k" << std::endl;
-        }
-    }
-
-    else if (alg == "mod-sampling") {
-        for (uint64_t t = 1; t <= k; ++t) {
-            std::cout << "### t = " << t << "\n";
-            std::cout << "### num_tmers = " << (w + k - 1) - t + 1 << std::endl;
-            run<mod_sampling<Hasher>>(sequence, k, w, t, seed, bench, stream);
-        }
-    }
-
-    else if (alg == "decycling") {
-        const uint64_t t = -1;  // not used
-        run<decycling<Hasher>>(sequence, k, w, t, seed, bench, stream);
-    }
-
-    else if (alg == "double-decycling") {
-        const uint64_t t = -1;  // not used
-        run<double_decycling<Hasher>>(sequence, k, w, t, seed, bench, stream);
-    }
-
-    else {
-        std::cerr << "Error: '" << alg << "' does not correspond to any method" << std::endl;
-    }
+    parameters params(w + k - t, t, s, seed, p);
+    anchor_type anchor(params);
+    mod_sampling<anchor_type> alg(w, k, anchor);
+    run(sequence, alg, bench, stream);
 }
 
 void run(std::string const& input_filename, std::string const& alg,                          //
@@ -225,10 +173,8 @@ int main(int argc, char** argv) {
     parser.add("k", "K-mer length.", "-k", true);
     parser.add("w", "Window size.", "-w", true);
     parser.add("alg",
-               "Sampling algorithm to use. Options are: 'minimizer', 'lr-minimizer', "
-               "'mod-minimizer', 'miniception', 'mod-sampling', 'rot-minimizer-orig', "
-               "'rot-minimizer-alt', 'decycling', 'double-decycling', 'closed-syncmer', "
-               "'open-syncmer', 'open-closed-syncmer'.",
+               "Sampling algorithm to use. Options are: 'M', 'C', 'O', 'OC', 'DD', "
+               "'mod-M', 'mod-C', 'mod-O', 'mod-OC', 'mod-DD'.",
                "-a", true);
     parser.add("hash_size",
                "Number of bits for hash function (either 64 or 128; default is " +

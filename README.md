@@ -2,18 +2,19 @@
 
 This library provides a collection of sampling algorithms, including:
 
-- mod-sampling,
-- lr-minimizers (a "context-sensitive" version of closed syncmers),
-- mod-minimizers,
-- "classic" minimizers,
-- miniception,
-- rotational-minimizers,
-- decycling set based minimizers,
-- closed-syncmers,
-- open-syncmers,
-- open-closed-syncmers.
+- random minimizers (`'M'``),
+- closed sycnmers (`'C'`, a.k.a. "miniception"),
+- open syncmers (`'O'`),
+- open-closed minimizers (`'OC'`),
+- double decycling set based (`'DD'`),
+- mod-sampling paired with any of the previous methods, thus:
+	- random mod-minimizers (`'mod-M'`),
+	- closed mod-minimizers (`'mod-C'`),
+	- open mod-minimizers (`'mod-O'`),
+	- open-closed mod-minimizers (`'mod-OC'`),
+	- double-decycling mod-minimizers (`'mod-DD'`).
 
-The code has been used for the experiments of the paper [*"The mod-minimizer: a simple and efficient sampling algorithm for long k-mers"*](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.WABI.2024.11), published in WABI 2024.
+The code has been used for the experiments of the paper [*"The open-closed mod-minimizer algorithm"*](), based on the previous paper [*"The mod-minimizer: a simple and efficient sampling algorithm for long k-mers"*](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.WABI.2024.11) (WABI 2024, [code](https://github.com/jermp/minimizers/releases/tag/v1.0.0)).
 
 To reproduce the experiments in the paper: first compile the code as explained below and then run the scripts [here](https://github.com/jermp/minimizers/tree/main/script#experiments).
 
@@ -39,35 +40,29 @@ After compilation, generate some random sequence (in the following example, of 1
 and evaluate density of different methods with the tool `density`.
 Some examples below.
 
-	./density -i test.bin -k 63 -w 8 -a minimizer --stream
+	./density -i test.bin -k 63 -w 8 -a M --stream
 
-	  num_sampled_kmers = 222287
+	  is_forward = YES
+	  num_sampled_kmers = 222230
 	  num_kmers = 999938
 	  num_windows = 999931
-	  density = 0.222301
-	  1.77841X away from lower bound 1/w = 0.125
-	  calculation using closed formulas:
-	     density = 0.222222
-	     1.77778X away from lower bound 1/w = 0.125
+	  density = 0.222244
+	  1.77795X away from lower bound 1/w = 0.125
 
-	./density -i test.bin -k 63 -w 8 -a lr-minimizer --stream
+	./density -i test.bin -k 63 -w 8 -a OC --stream
 
-	  num_sampled_kmers = 176558
+	  is_forward = YES
+	  num_sampled_kmers = 181061
 	  num_kmers = 999938
 	  num_windows = 999931
-	  density = 0.176569
-	  1.41255X away from lower bound 1/w = 0.125
-	  calculation using closed formulas:
-	     density = 0.176471
-	     1.41176X away from lower bound 1/w = 0.125
+	  density = 0.181072
+	  1.44858X away from lower bound 1/w = 0.125
 
-	./density -i test.bin -k 63 -w 8 -a mod-minimizer --stream
+	./density -i test.bin -k 63 -w 8 -a mod-OC --stream
 
-	  num_sampled_kmers = 138501
+	  is_forward = YES
+	  num_sampled_kmers = 138011
 	  num_kmers = 999938
 	  num_windows = 999931
-	  density = 0.13851
-	  1.10808X away from lower bound 1/w = 0.125
-	  calculation using closed formulas:
-	     density = 0.138462
-	     1.10769X away from lower bound 1/w = 0.125
+	  density = 0.13802
+	  1.10416X away from lower bound 1/w = 0.125

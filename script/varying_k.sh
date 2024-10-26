@@ -1,119 +1,119 @@
-# w = 8
-for k in {5..100}
+# w = 24
+for k in {5..75}
 do
-	./density -i random.10M.s4.bin -k $k -w 8 -a mod-minimizer --stream 2>> mod_mini.varying_k.w.8.txt
-done
-
-# w = 8
-for k in {5..100}
-do
-	./density -i random.10M.s4.bin -k $k -w 8 -a lr-minimizer --stream 2>> lr_mini.varying_k.w.8.txt
-done
-
-# w = 8
-for k in {5..100}
-do
-	./density -i random.10M.s4.bin -k $k -w 8 -a minimizer --stream 2>> mini.varying_k.w.8.txt
-done
-
-# w = 8
-for k in {5..100}
-do
-	./density -i random.10M.s4.bin -k $k -w 8 -a miniception --stream 2>> miniception.varying_k.w.8.txt
-done
-
-# w = 8
-for k in {5..100}
-do
-	./density -i random.10M.s4.bin -k $k -w 8 -a open-syncmer --stream 2>> open-syncmer.varying_k.w.8.txt
-done
-
-# w = 8
-for k in {5..100}
-do
-	./density -i random.10M.s4.bin -k $k -w 8 -a open-closed-syncmer --stream 2>> open-closed-syncmer.varying_k.w.8.txt
-done
-
-# w = 8
-for k in {5..100}
-do
-    ./density -i random.10M.s4.bin -k $k -w 8 -a rot-minimizer-alt --stream 2>> rot-minimizer-alt.varying_k.w.8.txt
-done
-
-# w = 8
-for k in {5..100}
-do
-    ./density -i random.10M.s4.bin -k $k -w 8 -a rot-minimizer-orig --stream 2>> rot-minimizer-orig.varying_k.w.8.txt
-done
-
-# w = 8
-for k in {5..100}
-do
-	./density -i random.10M.s4.bin -k $k -w 8 -a decycling --stream 2>> decycling.varying_k.w.8.txt
-done
-
-# w = 8
-for k in {5..100}
-do
-	./density -i random.10M.s4.bin -k $k -w 8 -a double-decycling --stream 2>> double-decycling.varying_k.w.8.txt
+	./density -i random.1M.s4.bin -k $k -w 24 -a M --stream 2>> M.s4.varying_k.w.24.txt
 done
 
 # w = 24
-for k in {5..300}
+for k in {5..75}
 do
-	./density -i random.10M.s4.bin -k $k -w 24 -a mod-minimizer --stream 2>> mod_mini.varying_k.w.24.txt
+	./density -i random.1M.s4.bin -k $k -w 24 -a C --stream 2>> C.s4.varying_k.w.24.txt
 done
 
 # w = 24
-for k in {5..300}
+for k in {5..75}
 do
-	./density -i random.10M.s4.bin -k $k -w 24 -a lr-minimizer --stream 2>> lr_mini.varying_k.w.24.txt
+	./density -i random.1M.s4.bin -k $k -w 24 -a O --stream 2>> O.s4.varying_k.w.24.txt
 done
 
 # w = 24
-for k in {5..300}
+for k in {5..75}
 do
-	./density -i random.10M.s4.bin -k $k -w 24 -a minimizer --stream 2>> mini.varying_k.w.24.txt
+	./density -i random.1M.s4.bin -k $k -w 24 -a OC --stream 2>> OC.s4.varying_k.w.24.txt
 done
 
 # w = 24
-for k in {5..300}
+for k in {5..75}
 do
-	./density -i random.10M.s4.bin -k $k -w 24 -a miniception --stream 2>> miniception.varying_k.w.24.txt
+	./density -i random.1M.s4.bin -k $k -w 24 -a DD --stream 2>> DD.s4.varying_k.w.24.txt
 done
 
 # w = 24
-for k in {5..300}
+for k in {5..75}
 do
-	./density -i random.10M.s4.bin -k $k -w 24 -a open-syncmer --stream 2>> open-syncmer.varying_k.w.24.txt
+	./density -i random.1M.s4.bin -k $k -w 24 -a mod-M --stream 2>> mod-M.s4.varying_k.w.24.txt
 done
 
 # w = 24
-for k in {5..300}
+for k in {5..75}
 do
-	./density -i random.10M.s4.bin -k $k -w 24 -a open-closed-syncmer --stream 2>> open-closed-syncmer.varying_k.w.24.txt
+	./density -i random.1M.s4.bin -k $k -w 24 -a mod-C --stream 2>> mod-C.s4.varying_k.w.24.txt
 done
 
 # w = 24
-for k in {5..300}
+for k in {5..75}
 do
-    ./density -i random.10M.s4.bin -k $k -w 24 -a rot-minimizer-alt --stream 2>> rot-minimizer-alt.varying_k.w.24.txt
+	./density -i random.1M.s4.bin -k $k -w 24 -a mod-O --stream 2>> mod-O.s4.varying_k.w.24.txt
 done
 
 # w = 24
-for k in {5..300}
+for k in {5..75}
 do
-    ./density -i random.10M.s4.bin -k $k -w 24 -a rot-minimizer-orig --stream 2>> rot-minimizer-orig.varying_k.w.24.txt
+	./density -i random.1M.s4.bin -k $k -w 24 -a mod-OC --stream 2>> mod-OC.s4.varying_k.w.24.txt
 done
 
 # w = 24
-for k in {5..300}
+for k in {5..75}
 do
-	./density -i random.10M.s4.bin -k $k -w 24 -a decycling --stream 2>> decycling.varying_k.w.24.txt
+	./density -i random.1M.s4.bin -k $k -w 24 -a mod-DD --stream 2>> mod-DD.s4.varying_k.w.24.txt
 done
 
 # w = 24
-for k in {5..300}
+for k in {5..75}
 do
-	./density -i random.10M.s4.bin -k $k -w 24 -a double-decycling --stream 2>> double-decycling.varying_k.w.24.txt
+	./density -i random.1M.s256.bin -k $k -w 24 -a M --stream 2>> M.s256.varying_k.w.24.txt
+done
+
+# w = 24
+for k in {5..75}
+do
+	./density -i random.1M.s256.bin -k $k -w 24 -a C --stream 2>> C.s256.varying_k.w.24.txt
+done
+
+# w = 24
+for k in {5..75}
+do
+	./density -i random.1M.s256.bin -k $k -w 24 -a O --stream 2>> O.s256.varying_k.w.24.txt
+done
+
+# w = 24
+for k in {5..75}
+do
+	./density -i random.1M.s256.bin -k $k -w 24 -a OC --stream 2>> OC.s256.varying_k.w.24.txt
+done
+
+# w = 24
+for k in {5..75}
+do
+	./density -i random.1M.s256.bin -k $k -w 24 -a DD --stream 2>> DD.s256.varying_k.w.24.txt
+done
+
+# # w = 24
+for k in {5..75}
+do
+	./density -i random.1M.s256.bin -k $k -w 24 -a mod-M --stream 2>> mod-M.s256.varying_k.w.24.txt
+done
+
+# w = 24
+for k in {5..75}
+do
+	./density -i random.1M.s256.bin -k $k -w 24 -a mod-C --stream 2>> mod-C.s256.varying_k.w.24.txt
+done
+
+# w = 24
+for k in {5..75}
+do
+	./density -i random.1M.s256.bin -k $k -w 24 -a mod-O --stream 2>> mod-O.s256.varying_k.w.24.txt
+done
+
+# w = 24
+for k in {5..75}
+do
+	./density -i random.1M.s256.bin -k $k -w 24 -a mod-OC --stream 2>> mod-OC.s256.varying_k.w.24.txt
+done
+
+# w = 24
+for k in {5..75}
+do
+	./density -i random.1M.s256.bin -k $k -w 24 -a mod-DD --stream 2>> mod-DD.s256.varying_k.w.24.txt
 done
