@@ -41,33 +41,33 @@ Some examples below.
 
 	./density -i test.bin -k 63 -w 8 -a minimizer --stream
 
-	  num_sampled_kmers = 222189
+	  num_sampled_kmers = 222287
 	  num_kmers = 999938
 	  num_windows = 999931
-	  density = 0.222203
-	  1.77762X away from lower bound 1/w = 0.125
+	  density = 0.222301
+	  1.77841X away from lower bound 1/w = 0.125
 	  calculation using closed formulas:
 	     density = 0.222222
 	     1.77778X away from lower bound 1/w = 0.125
 
 	./density -i test.bin -k 63 -w 8 -a lr-minimizer --stream
 
-	  num_sampled_kmers = 176521
+	  num_sampled_kmers = 176558
 	  num_kmers = 999938
 	  num_windows = 999931
-	  density = 0.176532
-	  1.41226X away from lower bound 1/w = 0.125
+	  density = 0.176569
+	  1.41255X away from lower bound 1/w = 0.125
 	  calculation using closed formulas:
 	     density = 0.176471
 	     1.41176X away from lower bound 1/w = 0.125
 
 	./density -i test.bin -k 63 -w 8 -a mod-minimizer --stream
 
-	  num_sampled_kmers = 138477
+	  num_sampled_kmers = 138501
 	  num_kmers = 999938
 	  num_windows = 999931
-	  density = 0.138486
-	  1.10788X away from lower bound 1/w = 0.125
+	  density = 0.13851
+	  1.10808X away from lower bound 1/w = 0.125
 	  calculation using closed formulas:
 	     density = 0.138462
 	     1.10769X away from lower bound 1/w = 0.125

@@ -24,7 +24,6 @@ double run(std::string const& sequence,                                         
     typedef std::chrono::high_resolution_clock clock_type;
 
     uint64_t num_sampled_kmers = 0;
-    // std::vector<uint64_t> jump_lengths(w + 1, 0);  // 0, 1, 2, ..., w
     bool is_forward = true;
     std::vector<uint64_t> positions;  // of sampled kmers
 
@@ -44,11 +43,6 @@ double run(std::string const& sequence,                                         
         do_not_optimize_away(p);
         if (!bench) {
             uint64_t absolute_pos = i + p;  // absolute + relative
-
-            // uint64_t jump_len = absolute_pos - (positions.empty() ? 0 : positions.back());
-            // assert(jump_len <= w);
-            // jump_lengths[jump_len] += 1;
-
             positions.push_back(absolute_pos);
         }
     }
@@ -79,44 +73,14 @@ double run(std::string const& sequence,                                         
     std::ostream os(&buffer);
 
     std::cout << "  is_forward = " << (is_forward ? "YES" : "NO") << std::endl;
-    //           << " (expected = " << (is_not_forward(k, w, t) ? "NO)" : "YES)") << std::endl;
 
     double density = static_cast<double>(num_sampled_kmers) / num_kmers;
-
-    // uint64_t num_total_jumps =
-    //     std::accumulate(jump_lengths.begin(), jump_lengths.end(), uint64_t(0));
-    // assert(num_total_jumps == num_windows);
-    // double expected_jump_len = 0.0;
-    // std::cout << "total jumps = " << num_total_jumps << std::endl;
-    // std::cout << "jump len distribution:" << std::endl;
-    // for (uint64_t i = 1;  // ignore jumps of length 0 and rescale probabilities
-    //      i != jump_lengths.size(); ++i) {
-    //     double prob = static_cast<double>(jump_lengths[i]) / (num_total_jumps - jump_lengths[0]);
-    //     expected_jump_len += i * prob;
-    //     std::cout << "  num. jumps of len " << i << " = " << jump_lengths[i];
-    //     std::cout << "  prob(jump_len=" << i << ")=" << prob << std::endl;
-    // }
-
-    // std::cout << "expected_jump_len = " << expected_jump_len << std::endl;
-    // std::cout << "computed density = 1/expected_jump_len = " << 1 / expected_jump_len <<
-    // std::endl;
 
     os << w << ',' << k << ',' << t << ',' << density << ',';
 
     std::cout << "  num_sampled_kmers = " << num_sampled_kmers << std::endl;
     std::cout << "  num_kmers = " << num_kmers << std::endl;
     std::cout << "  num_windows = " << num_windows << std::endl;
-
-    /*
-        The exp. number of closed syncmers in a window
-        is computed as the mean of a binomial distribution
-        with parameter p=2/(w+1) over the support {1,..,w}:
-            P[N=i] = {w choose i} * p^i * (1-p)^(w-i).
-        The mean is pw = 2w/(w+1).
-        This is a very good approximation when k is large.
-    */
-    // std::cout << "  expected num. closed syncmers per window = " << (2.0 * w) / (w + 1)
-    //           << std::endl;
 
     std::cout << "  density = " << density << std::endl;
     std::cout << "  " << redundancy_in_density_as_factor(density, 1.0 / w)
