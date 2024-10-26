@@ -117,9 +117,8 @@ void run(std::string const& input_filename, std::string const& alg_name,  //
          we do not aim at being exhaustive here.)
     */
     uint64_t r = alphabet_size <= 4 ? 4 : 1;
-
-    uint64_t t = k;
     uint64_t s = k > w ? std::max(k - w, r) : r;
+    uint64_t t = k;
 
     if (util::begins_with(alg_name, "mod")) {
         t = r + ((k - r) % w);
@@ -145,6 +144,7 @@ void run(std::string const& input_filename, std::string const& alg_name,  //
         p = {2, 1, 0};
     } else {
         std::cerr << "Error: '" << alg_name << "' does not correspond to any method" << std::endl;
+        return;
     }
 
     parameters params(w + k - t, t, s, seed, p);
@@ -173,8 +173,8 @@ int main(int argc, char** argv) {
     parser.add("k", "K-mer length.", "-k", true);
     parser.add("w", "Window size.", "-w", true);
     parser.add("alg",
-               "Sampling algorithm to use. Options are: 'M', 'C', 'O', 'OC',"
-               "'mod-M', 'mod-C', 'mod-O', 'mod-OC'.",
+               "Sampling algorithm to use. Options are: 'M', 'C', 'O', 'OC', 'DD', "
+               "'mod-M', 'mod-C', 'mod-O', 'mod-OC', 'mod-DD'.",
                "-a", true);
     parser.add("hash_size",
                "Number of bits for hash function (either 64 or 128; default is " +
