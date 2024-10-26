@@ -14,7 +14,7 @@ This library provides a collection of sampling algorithms, including:
 	- open-closed mod-minimizers (`'mod-OC'`),
 	- double-decycling mod-minimizers (`'mod-DD'`).
 
-The code has been used for the experiments of the paper [*"The open-closed mod-minimizer algorithm"*](), based on the previous paper [*"The mod-minimizer: a simple and efficient sampling algorithm for long k-mers"*](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.WABI.2024.11) (WABI 2024, [code]()).
+The code has been used for the experiments of the paper [*"The open-closed mod-minimizer algorithm"*](), based on the previous paper [*"The mod-minimizer: a simple and efficient sampling algorithm for long k-mers"*](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.WABI.2024.11) (WABI 2024, [code](https://github.com/jermp/minimizers/releases/tag/v1.0.0)).
 
 To reproduce the experiments in the paper: first compile the code as explained below and then run the scripts [here](https://github.com/jermp/minimizers/tree/main/script#experiments).
 
