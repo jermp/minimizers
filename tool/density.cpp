@@ -59,33 +59,23 @@ double run(std::string const& sequence, Alg alg, const bool bench, const bool st
 
     if (bench) {
         double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-        std::cout << "tot. time: " << elapsed / 1000 << " [sec]" << std::endl;
-        std::cout << "avg. per window: " << (elapsed * 1000000) / num_windows << " [nanosec]"
+        std::cout << "  tot. time: " << elapsed / 1000 << " [sec]" << std::endl;
+        std::cout << "  avg. per window: " << (elapsed * 1000000) / num_windows << " [nanosec]"
                   << std::endl;
         return 0.0;
     }
     std::sort(positions.begin(), positions.end());
     num_sampled_kmers =
         std::distance(positions.begin(), std::unique(positions.begin(), positions.end()));
-
-    std::stringbuf buffer;
-    std::ostream os(&buffer);
-
-    std::cout << "  is_forward = " << (is_forward ? "YES" : "NO") << std::endl;
-
     double density = static_cast<double>(num_sampled_kmers) / num_kmers;
 
-    os << w << ',' << k << ',' << density << ',';
-
-    std::cout << "  num_sampled_kmers = " << num_sampled_kmers << std::endl;
-    std::cout << "  num_kmers = " << num_kmers << std::endl;
-    std::cout << "  num_windows = " << num_windows << std::endl;
-    std::cout << "  density = " << density << std::endl;
-    std::cout << "  " << util::redundancy_in_density_as_factor(density, 1.0 / w)
-              << "X away from lower bound 1/w = " << 1.0 / w << std::endl;
-
-    os << (is_forward ? "YES" : "NO");
-    std::cerr << buffer.str() << std::endl;
+    // std::cout << "  is_forward = " << (is_forward ? "YES" : "NO") << std::endl;
+    // std::cout << "  num_sampled_kmers = " << num_sampled_kmers << std::endl;
+    // std::cout << "  num_kmers = " << num_kmers << std::endl;
+    // std::cout << "  num_windows = " << num_windows << std::endl;
+    // std::cout << "  density = " << density << std::endl;
+    // std::cout << "  " << util::redundancy_in_density_as_factor(density, 1.0 / w)
+    //           << "X away from lower bound 1/w = " << 1.0 / w << std::endl;
 
     return density;
 }
@@ -93,7 +83,7 @@ double run(std::string const& sequence, Alg alg, const bool bench, const bool st
 template <typename Hasher>
 void run(std::string const& input_filename, std::string const& alg_name,  //
          const uint64_t k, const uint64_t w, const uint64_t seed,         //
-         const bool bench, const bool stream)                             //
+         const bool bench, const bool stream, const bool optimize_s)      //
 {
     std::ifstream is(input_filename.c_str(), std::ifstream::binary);
     if (!is.good()) throw std::runtime_error("error in opening the file '" + input_filename + "'");
@@ -116,51 +106,56 @@ void run(std::string const& input_filename, std::string const& alg_name,  //
         (There are just examples based on our experiments:
          we do not aim at being exhaustive here.)
     */
-    uint64_t r = alphabet_size <= 4 ? 4 : 1;
-    uint64_t s = k > w ? std::max(k - w, r) : r;
-    uint64_t t = k;
+    const uint64_t r = alphabet_size <= 4 ? 4 : 1;
+    const uint64_t t = util::begins_with(alg_name, "mod") ? r + ((k - r) % w) : k;
 
-    if (util::begins_with(alg_name, "mod")) {
-        t = r + ((k - r) % w);
-        s = r;
-    }
-
-    priority p;
-    if (alg_name == "DD" or alg_name == "mod-DD") {
-        p = {0, 0, 0};
+    double best_density = 1.0;
+    uint64_t best_s = r;
+    for (uint64_t s = r; s <= t; ++s) {
+        priority p;
+        if (alg_name == "DD" or alg_name == "mod-DD") {
+            p = {0, 0, 0};
+            parameters params(w + k - t, t, s, seed, p);
+            typedef double_decycling<Hasher> anchor_type;
+            anchor_type anchor(params);
+            mod_sampling<anchor_type> alg(w, k, anchor);
+            run(sequence, alg, bench, stream);
+            return;
+        } else if (alg_name == "M" or alg_name == "mod-M") {
+            p = {0, 0, 0};
+        } else if (alg_name == "C" or alg_name == "mod-C") {
+            p = {1, 0, 2};
+        } else if (alg_name == "O" or alg_name == "mod-O") {
+            p = {1, 2, 0};
+        } else if (alg_name == "OC" or alg_name == "mod-OC") {
+            p = {2, 1, 0};
+        } else {
+            std::cerr << "Error: '" << alg_name << "' does not correspond to any method"
+                      << std::endl;
+            return;
+        }
         parameters params(w + k - t, t, s, seed, p);
-        typedef double_decycling<Hasher> anchor_type;
         anchor_type anchor(params);
         mod_sampling<anchor_type> alg(w, k, anchor);
-        run(sequence, alg, bench, stream);
-        return;
-    } else if (alg_name == "M" or alg_name == "mod-M") {
-        p = {0, 0, 0};
-    } else if (alg_name == "C" or alg_name == "mod-C") {
-        p = {1, 0, 2};
-    } else if (alg_name == "O" or alg_name == "mod-O") {
-        p = {1, 2, 0};
-    } else if (alg_name == "OC" or alg_name == "mod-OC") {
-        p = {2, 1, 0};
-    } else {
-        std::cerr << "Error: '" << alg_name << "' does not correspond to any method" << std::endl;
-        return;
+        double density = run(sequence, alg, bench, stream);
+        if (density < best_density) {
+            best_density = density;
+            best_s = s;
+        }
+        if (optimize_s == false) break;
     }
 
-    parameters params(w + k - t, t, s, seed, p);
-    anchor_type anchor(params);
-    mod_sampling<anchor_type> alg(w, k, anchor);
-    run(sequence, alg, bench, stream);
+    std::cerr << best_density << std::endl;
 }
 
 void run(std::string const& input_filename, std::string const& alg,                          //
          const uint64_t k, const uint64_t w, const uint64_t hash_size, const uint64_t seed,  //
-         const bool bench, const bool stream)                                                //
+         const bool bench, const bool stream, const bool optimize_s)                         //
 {
     if (hash_size == 64) {
-        run<hasher64_type>(input_filename, alg, k, w, seed, bench, stream);
+        run<hasher64_type>(input_filename, alg, k, w, seed, bench, stream, optimize_s);
     } else if (hash_size == 128) {
-        run<hasher128_type>(input_filename, alg, k, w, seed, bench, stream);
+        run<hasher128_type>(input_filename, alg, k, w, seed, bench, stream, optimize_s);
     }
 }
 
@@ -188,6 +183,7 @@ int main(int argc, char** argv) {
                true);
     parser.add("stream", "Sample from a stream (stateful computation rather than stateless).",
                "--stream", false, true);
+    parser.add("opt-s", "Compute density for best choice of s.", "--opt-s", false, true);
 
     if (!parser.parse()) return 1;
 
@@ -209,8 +205,9 @@ int main(int argc, char** argv) {
     if (parser.parsed("seed")) seed = parser.get<uint64_t>("seed");
     bool bench = parser.get<bool>("bench");
     bool stream = parser.get<bool>("stream");
+    bool optimize_s = parser.get<bool>("opt-s");
 
-    run(input_filename, alg, k, w, hash_size, seed, bench, stream);
+    run(input_filename, alg, k, w, hash_size, seed, bench, stream, optimize_s);
 
     return 0;
 }
