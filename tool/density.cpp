@@ -110,8 +110,8 @@ void run(std::string const& input_filename, std::string const& alg_name,  //
     const uint64_t t = util::begins_with(alg_name, "mod") ? r + ((k - r) % w) : k;
 
     double best_density = 1.0;
-    uint64_t best_s = r;
-    for (uint64_t s = r; s <= t; ++s) {
+    uint64_t best_s = 1;
+    for (uint64_t s = (optimize_s ? 1 : r); s <= t; ++s) {
         priority p;
         if (alg_name == "DD" or alg_name == "mod-DD") {
             p = {0, 0, 0};
