@@ -23,7 +23,7 @@ double run(std::string const& sequence, Alg alg, const bool bench, const bool st
     typedef std::chrono::high_resolution_clock clock_type;
 
     uint64_t num_sampled_kmers = 0;
-    bool is_forward = true;
+    // bool is_forward = true;
     std::vector<uint64_t> positions;  // of sampled kmers
 
     auto duration = clock_type::duration::zero();
@@ -50,12 +50,12 @@ double run(std::string const& sequence, Alg alg, const bool bench, const bool st
     duration += stop - start;
 
     /* Check forwardness outside main loop. */
-    for (uint64_t i = 0; i + 1 < positions.size(); i++) {
-        if (positions[i] > positions[i + 1]) {
-            is_forward = false;
-            break;
-        }
-    }
+    // for (uint64_t i = 0; i + 1 < positions.size(); i++) {
+    //     if (positions[i] > positions[i + 1]) {
+    //         is_forward = false;
+    //         break;
+    //     }
+    // }
 
     if (bench) {
         double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
