@@ -9,7 +9,7 @@
 #include "hasher.hpp"
 #include "mod_sampling.hpp"
 #include "syncmer.hpp"
-#include "double_decycling.hpp"
+#include "decycling.hpp"
 
 template <typename T>
 static inline void do_not_optimize_away(T&& value) {
@@ -113,13 +113,23 @@ void run(std::string const& input_filename, std::string const& alg_name,  //
     uint64_t best_s = 1;
     for (uint64_t s = (optimize_s ? 1 : r); s <= t; ++s) {
         priority p;
-        if (alg_name == "DD" or alg_name == "mod-DD") {
+        if (alg_name == "D" or alg_name == "mod-D") {
             p = {0, 0, 0};
-            parameters params(w + k - t, t, s, seed, p);
-            typedef double_decycling<Hasher> anchor_type;
-            anchor_type anchor(params);
+            parameters anchor_params(w + k - t, t, s, seed, p);
+            typedef single_decycling<Hasher> anchor_type;
+            anchor_type anchor(anchor_params);
             mod_sampling<anchor_type> alg(w, k, anchor);
-            run(sequence, alg, bench, stream);
+            double density = run(sequence, alg, bench, stream);
+            std::cerr << density << std::endl;
+            return;
+        } else if (alg_name == "DD" or alg_name == "mod-DD") {
+            p = {0, 0, 0};
+            parameters anchor_params(w + k - t, t, s, seed, p);
+            typedef double_decycling<Hasher> anchor_type;
+            anchor_type anchor(anchor_params);
+            mod_sampling<anchor_type> alg(w, k, anchor);
+            double density = run(sequence, alg, bench, stream);
+            std::cerr << density << std::endl;
             return;
         } else if (alg_name == "M" or alg_name == "mod-M") {
             p = {0, 0, 0};
@@ -134,8 +144,8 @@ void run(std::string const& input_filename, std::string const& alg_name,  //
                       << std::endl;
             return;
         }
-        parameters params(w + k - t, t, s, seed, p);
-        anchor_type anchor(params);
+        parameters anchor_params(w + k - t, t, s, seed, p);
+        anchor_type anchor(anchor_params);
         mod_sampling<anchor_type> alg(w, k, anchor);
         double density = run(sequence, alg, bench, stream);
         if (density < best_density) {
