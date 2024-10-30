@@ -110,7 +110,7 @@ void run(std::string const& input_filename, std::string const& alg_name,  //
     const uint64_t t = util::begins_with(alg_name, "mod") ? r + ((k - r) % w) : k;
 
     double best_density = 1.0;
-    uint64_t best_s = 1;
+    // uint64_t best_s = 1;
     for (uint64_t s = (optimize_s ? 1 : r); s <= t; ++s) {
         priority p;
         if (alg_name == "D" or alg_name == "mod-D") {
@@ -150,11 +150,12 @@ void run(std::string const& input_filename, std::string const& alg_name,  //
         double density = run(sequence, alg, bench, stream);
         if (density < best_density) {
             best_density = density;
-            best_s = s;
+            // best_s = s;
         }
         if (optimize_s == false) break;
     }
 
+    // std::cerr << best_s << ',';
     std::cerr << best_density << std::endl;
 }
 
