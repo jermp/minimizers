@@ -2,7 +2,7 @@
 
 This library provides a collection of sampling algorithms, including:
 
-- random minimizers (`'M'``),
+- random minimizers (`'M'`),
 - closed sycnmers (`'C'`, a.k.a. "miniception"),
 - open syncmers (`'O'`),
 - open-closed minimizers (`'OC'`),
