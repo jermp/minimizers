@@ -35,4 +35,5 @@ include_directories(.)
 include_directories(include)
 
 add_executable(density tool/density.cpp)
+add_executable(canonical_density tool/canonical_density.cpp)
 add_executable(generate_random_sequence tool/generate_random_sequence.cpp)
